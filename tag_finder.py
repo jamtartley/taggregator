@@ -6,8 +6,7 @@ import re
 
 tag_colour = "\033[92m"
 colour_end = "\033[0m"
-root = "example_files/"
-extensions = ["txt", "c"]
+extensions = []
 tags = ["@TODO", "@HACK", "@CLEANUP", "@FIXME"]
 found_matches = defaultdict(list)
 text_padding = 4
@@ -46,13 +45,16 @@ def find_matches(file_name):
 def print_right_pad(text, pad_size, is_end=False):
     print(text + pad_size * " ", end = "\n" if is_end else "")
 
+def parse_file_extensions(args):
+    return [e.strip() for e in args.extensions.split(",")]
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-e", help="Extension of files to test")
+parser.add_argument("-r", "--root", default="", help="Path from which to start search")
+parser.add_argument("-e", "--extensions", default="txt", help="Comma-separated list of extensions to test")
 args = parser.parse_args()
 
-print(args.echo)
-
+root = args.root
+extensions = parse_file_extensions(args)
 
 for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
     for file_name in files_of_extension:
@@ -65,7 +67,7 @@ for tag in found_matches:
 
     for match in found_matches[tag]:
         print_right_pad(match.file_name, len(longest_file_name) - len(match.file_name) + text_padding)
-        print_right_pad(match.line_number, len(longest_line_number) - len(match.line_number) + text_padding)
+        print_right_pad(":" + match.line_number, len(longest_line_number) - len(match.line_number) + text_padding)
         print_right_pad(match.line, len(longest_line) - len(match.line) + text_padding, True)
 
     print("\n")
