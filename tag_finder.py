@@ -2,17 +2,18 @@ from collections import defaultdict
 from itertools import groupby
 import argparse
 import glob
+import os
 import re
 
 tag_colour = "\033[92m"
 colour_end = "\033[0m"
 extensions = []
-tags = ["@TODO", "@HACK", "@CLEANUP", "@FIXME"]
 found_matches = defaultdict(list)
 text_padding = 4
 longest_file_name = ""
 longest_line_number = ""
 longest_line = ""
+is_case_sensitive = False
 
 class Match:
     def __init__(self, file_name, line_number, line):
@@ -39,22 +40,27 @@ def find_matches(file_name):
     with open(file_name, "r") as f:
         for number, line in enumerate(f):
             for tag in tags:
-                if tag in line:
+                is_match = tag in line if is_case_sensitive else tag.upper() in line.upper()
+                if is_match:
                     yield tag, Match(file_name, number, line.rstrip())
 
 def print_right_pad(text, pad_size, is_end=False):
     print(text + pad_size * " ", end = "\n" if is_end else "")
 
-def parse_file_extensions(args):
-    return [e.strip() for e in args.extensions.split(",")]
+def parse_arg_array(arr):
+    return [x.strip() for x in arr.split(",")]
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-r", "--root", default="", help="Path from which to start search")
-parser.add_argument("-e", "--extensions", default="txt", help="Comma-separated list of extensions to test")
+parser.add_argument("root", default=os.getcwd(), nargs="?", help="Path from which to start search")
+parser.add_argument("-e", "--extensions", default="*", help="Comma-separated list of extensions to test")
+parser.add_argument("-t", "--tags", default="@HACK, @TODO, @FIXME, @CLEANUP, @BUG, @ROBUSTNESS", help="Comma-separated list of tags to search for")
+parser.add_argument("-c", "--case_sensitive", action="store_true", help="Set if tag search should be case sensitive")
 args = parser.parse_args()
 
 root = args.root
-extensions = parse_file_extensions(args)
+extensions = parse_arg_array(args.extensions)
+tags = parse_arg_array(args.tags)
+is_case_sensitive = args.case_sensitive
 
 for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
     for file_name in files_of_extension:
@@ -62,7 +68,7 @@ for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recurs
             found_matches[tag].append(match)
 
 for tag in found_matches:
-    print(tag_colour + tag + colour_end)
+    print(tag_colour + (tag if is_case_sensitive else tag.upper()) + colour_end)
     print("-------------")
 
     for match in found_matches[tag]:
