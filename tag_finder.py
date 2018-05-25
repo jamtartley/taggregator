@@ -4,19 +4,15 @@ import argparse
 import glob
 import os
 import re
+import sys
 
-tag_colour = "\033[92m"
-colour_end = "\033[0m"
-extensions = []
-found_matches = defaultdict(list)
-text_padding = 4
-longest_file_name = ""
-longest_line_number = ""
-longest_line = ""
-is_case_sensitive = False
+class Priority:
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
 
 class Match:
-    def __init__(self, file_name, line_number, line):
+    def __init__(self, file_name, line_number, line, priority=Priority.HIGH):
         global longest_file_name
         global longest_line_number
         global longest_line
@@ -24,6 +20,7 @@ class Match:
         self.file_name = file_name
         self.line_number = str(line_number)
         self.line = line
+        self.priority = priority
 
         longest_file_name = max([file_name, longest_file_name], key=len)
         longest_line_number = max([str(line_number), longest_line_number], key=len)
@@ -45,16 +42,30 @@ def find_matches(file_name):
     with open(file_name, "r") as f:
         for number, line in enumerate(f):
             for tag in tags:
-                is_match = tag in line if is_case_sensitive else tag.upper() in line.upper()
-                if is_match:
-                    processed_line = get_truncated_text(line.strip(), 50)
-                    yield tag, Match(file_name, number, processed_line)
+                processed_tag = tag if is_case_sensitive else tag.upper()
+                processed_line = line if is_case_sensitive else line.upper()
+
+                if processed_tag in processed_line:
+                    truncated_line = get_truncated_text(line.strip(), 100)
+                    idx = processed_line.find(processed_tag)
+
+                    yield tag, Match(file_name, number, truncated_line)
 
 def print_right_pad(text, pad_size, is_end=False):
     print(text + pad_size * " ", end = "\n" if is_end else "")
 
 def parse_arg_array(arr):
     return [x.strip() for x in arr.split(",")]
+
+tag_colour = "\033[92m"
+colour_end = "\033[0m"
+extensions = []
+found_matches = defaultdict(list)
+text_padding = 4
+longest_file_name = ""
+longest_line_number = ""
+longest_line = ""
+is_case_sensitive = False
 
 parser = argparse.ArgumentParser()
 parser.add_argument("root", default=os.getcwd(), nargs="?", help="Path from which to start search")
@@ -70,11 +81,11 @@ tags = parse_arg_array(args.tags)
 is_case_sensitive = args.case_sensitive
 is_verbose = args.verbose
 
-# @BUG Not recursive past first level
 for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
     for file_name in files_of_extension:
         if is_verbose:
             print(file_name)
+
         try:
             for tag, match in find_matches(file_name):
                 found_matches[tag].append(match)
@@ -93,3 +104,6 @@ for tag in found_matches:
         print_right_pad(match.file_name, len(longest_file_name) - len(match.file_name) + text_padding)
         print_right_pad(":" + match.line_number, len(longest_line_number) - len(match.line_number) + text_padding)
         print_right_pad(match.line, len(longest_line) - len(match.line) + text_padding, True)
+        print(match.priority)
+
+print("\n")
