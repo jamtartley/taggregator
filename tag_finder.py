@@ -34,15 +34,21 @@ class Match:
         return self.file_name
 
 def type_name_to_extension(t):
-    return "**/*." + t
+    return "/**/*." + t
+
+def get_truncated_text(text, max_length, truncate_indicator="..."):
+    truncate_at = max_length - len(truncate_indicator)
+    return (text[:truncate_at] + truncate_indicator) if len(text) > truncate_at else text
 
 def find_matches(file_name):
+    # print (file_name)
     with open(file_name, "r") as f:
         for number, line in enumerate(f):
             for tag in tags:
                 is_match = tag in line if is_case_sensitive else tag.upper() in line.upper()
                 if is_match:
-                    yield tag, Match(file_name, number, line.rstrip())
+                    processed_line = get_truncated_text(line.strip(), 50)
+                    yield tag, Match(file_name, number, processed_line)
 
 def print_right_pad(text, pad_size, is_end=False):
     print(text + pad_size * " ", end = "\n" if is_end else "")
@@ -55,25 +61,35 @@ parser.add_argument("root", default=os.getcwd(), nargs="?", help="Path from whic
 parser.add_argument("-e", "--extensions", default="*", help="Comma-separated list of extensions to test")
 parser.add_argument("-t", "--tags", default="@HACK, @TODO, @FIXME, @CLEANUP, @BUG, @ROBUSTNESS", help="Comma-separated list of tags to search for")
 parser.add_argument("-c", "--case_sensitive", action="store_true", help="Set if tag search should be case sensitive")
+parser.add_argument("-v", "--verbose", action="store_true", help="Set if program should print verbose output")
 args = parser.parse_args()
 
 root = args.root
 extensions = parse_arg_array(args.extensions)
 tags = parse_arg_array(args.tags)
 is_case_sensitive = args.case_sensitive
+is_verbose = args.verbose
 
+# @BUG Not recursive past first level
 for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
     for file_name in files_of_extension:
-        for tag, match in find_matches(file_name):
-            found_matches[tag].append(match)
+        if is_verbose:
+            print(file_name)
+        try:
+            for tag, match in find_matches(file_name):
+                found_matches[tag].append(match)
+        except IsADirectoryError:
+            pass
+        except UnicodeDecodeError:
+            pass
 
 for tag in found_matches:
+    print("\n")
+    print("--------------------------")
     print(tag_colour + (tag if is_case_sensitive else tag.upper()) + colour_end)
-    print("-------------")
+    print("--------------------------")
 
     for match in found_matches[tag]:
         print_right_pad(match.file_name, len(longest_file_name) - len(match.file_name) + text_padding)
         print_right_pad(":" + match.line_number, len(longest_line_number) - len(match.line_number) + text_padding)
         print_right_pad(match.line, len(longest_line) - len(match.line) + text_padding, True)
-
-    print("\n")
