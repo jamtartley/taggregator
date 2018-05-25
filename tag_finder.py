@@ -6,13 +6,16 @@ import os
 import re
 import sys
 
-class Priority:
-    LOW = 1
-    MEDIUM = 2
-    HIGH = 3
+class TerminalColours():
+    END = '\033[0m'
+    HEADER = '\033[1;37m'
+    PRIORITY_NONE = END
+    PRIORITY_LOW = '\033[0;32m'
+    PRIORITY_MEDIUM = '\033[0;33m'
+    PRIORITY_HIGH = '\033[0;31m'
 
 class Match:
-    def __init__(self, file_name, line_number, line, priority=Priority.HIGH):
+    def __init__(self, file_name, line_number, line, priority):
         global longest_file_name
         global longest_line_number
         global longest_line
@@ -38,7 +41,8 @@ def get_truncated_text(text, max_length, truncate_indicator="..."):
     return (text[:truncate_at] + truncate_indicator) if len(text) > truncate_at else text
 
 def find_matches(file_name):
-    # print (file_name)
+    global priority_map
+
     with open(file_name, "r") as f:
         for number, line in enumerate(f):
             for tag in tags:
@@ -47,9 +51,14 @@ def find_matches(file_name):
 
                 if processed_tag in processed_line:
                     truncated_line = get_truncated_text(line.strip(), 100)
-                    idx = processed_line.find(processed_tag)
+                    priority_char_idx = processed_line.find(processed_tag)
+                    priority_match = re.search(r"\(([A-Za-z0-9_]+)\)", processed_line)
+                    priority = priority_map["NONE"]
 
-                    yield tag, Match(file_name, number, truncated_line)
+                    if priority_match is not None:
+                        priority = priority_map[priority_match.group(1).upper()]
+
+                    yield tag, Match(file_name, number, truncated_line, priority)
 
 def print_right_pad(text, pad_size, is_end=False):
     print(text + pad_size * " ", end = "\n" if is_end else "")
@@ -57,11 +66,21 @@ def print_right_pad(text, pad_size, is_end=False):
 def parse_arg_array(arr):
     return [x.strip() for x in arr.split(",")]
 
-tag_colour = "\033[92m"
-colour_end = "\033[0m"
+priority_map = {
+    "NONE": 0,
+    "LOW": 1,
+    "MEDIUM": 2,
+    "HIGH": 3
+}
+priority_colours = { 
+    priority_map["NONE"]: TerminalColours.PRIORITY_NONE,
+    priority_map["LOW"]: TerminalColours.PRIORITY_LOW,
+    priority_map["MEDIUM"]: TerminalColours.PRIORITY_MEDIUM,
+    priority_map["HIGH"]: TerminalColours.PRIORITY_HIGH,
+}
 extensions = []
 found_matches = defaultdict(list)
-text_padding = 4
+text_padding = 2
 longest_file_name = ""
 longest_line_number = ""
 longest_line = ""
@@ -95,15 +114,17 @@ for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recurs
             pass
 
 for tag in found_matches:
+    found_matches[tag].sort(key=lambda x: x.priority, reverse=True)
+
     print("\n")
-    print("--------------------------")
-    print(tag_colour + (tag if is_case_sensitive else tag.upper()) + colour_end)
-    print("--------------------------")
+    print(TerminalColours.HEADER + (tag if is_case_sensitive else tag.upper()) + TerminalColours.END)
+    print("--------------------------------------------------")
 
     for match in found_matches[tag]:
+        priority_colour = priority_colours[match.priority]
+
         print_right_pad(match.file_name, len(longest_file_name) - len(match.file_name) + text_padding)
         print_right_pad(":" + match.line_number, len(longest_line_number) - len(match.line_number) + text_padding)
-        print_right_pad(match.line, len(longest_line) - len(match.line) + text_padding, True)
-        print(match.priority)
+        print_right_pad(priority_colour + match.line + TerminalColours.END, len(longest_line) - len(match.line) + text_padding, True)
 
 print("\n")
