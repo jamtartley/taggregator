@@ -1,1 +1,1 @@
-include tag_finder/config.json
+include tag_finder/default_config.json
