@@ -1,6 +1,7 @@
 {
     "is_case_sensitive": true,
-    "tags": ["@TODO", "@BUG"],
-    "extensions": ["txt"],
-    "is_verbose": true
+    "tags": ["@TODO", "@HACK", "@ROBUSTNESS"],
+    "priorities": ["NEGLIGIBLE", "LOW", "MEDIUM", "HIGH", "CRITICAL"],
+    "extensions": ["txt", "cs"],
+    "is_verbose": false
 }

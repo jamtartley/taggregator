@@ -1,3 +1,6 @@
+#! /usr/bin/env python3
+#! -*- coding: utf-8 -*-
+
 from collections import defaultdict
 from itertools import groupby
 import argparse
@@ -5,6 +8,7 @@ import glob
 import json
 import os
 import re
+import statistics
 import sys
 
 class TerminalColours():
@@ -41,9 +45,7 @@ def get_truncated_text(text, max_length, truncate_indicator="..."):
     truncate_at = max_length - len(truncate_indicator)
     return (text[:truncate_at] + truncate_indicator) if len(text) > truncate_at else text
 
-def find_matches(file_name):
-    global priority_map
-
+def find_matches(file_name, priority_value_map):
     with open(file_name) as f:
         for number, line in enumerate(f):
             for tag in tags:
@@ -54,12 +56,37 @@ def find_matches(file_name):
                     truncated_line = get_truncated_text(line.strip(), 100)
                     priority_char_idx = processed_line.find(processed_tag)
                     priority_match = re.search(r"\(([A-Za-z0-9_]+)\)", processed_line)
-                    priority = priority_map["NONE"]
+                    priority = default_priority
 
-                    if priority_match is not None and priority_match in priority_map:
-                        priority = priority_map[priority_match.group(1).upper()]
+                    if priority_match is not None:
+                        priority_text = priority_match.group(1)
+                        priority = priority_value_map.get(priority_text, default_priority)
 
                     yield tag, Match(file_name, number, truncated_line, priority)
+
+def get_priority_value_map(all_priorities):
+    priority_value_map = {}
+
+    for number, p in enumerate(all_priorities):
+        priority_value_map[p] = number
+
+    return priority_value_map
+
+def get_priority_colours(priority_value_map):
+    colour_map = {default_priority: TerminalColours.PRIORITY_NONE}
+    median_value = statistics.median(priority_value_map.values())
+
+    for p in priority_value_map:
+        priority_value = priority_value_map[p]
+
+        if priority_value < median_value:
+            colour_map[priority_value] = TerminalColours.PRIORITY_LOW
+        elif priority_value > median_value:
+            colour_map[priority_value] = TerminalColours.PRIORITY_HIGH
+        else:
+            colour_map[priority_value] = TerminalColours.PRIORITY_MEDIUM
+
+    return colour_map
 
 def print_right_pad(text, pad_size, is_end=False):
     print(text + pad_size * " ", end = "\n" if is_end else "")
@@ -67,30 +94,16 @@ def print_right_pad(text, pad_size, is_end=False):
 def parse_arg_array(arr):
     return [x.strip() for x in arr.split(",")]
 
-priority_map = {
-    "NONE": 0,
-    "LOW": 1,
-    "MEDIUM": 2,
-    "HIGH": 3
-}
-priority_colours = { 
-    priority_map["NONE"]: TerminalColours.PRIORITY_NONE,
-    priority_map["LOW"]: TerminalColours.PRIORITY_LOW,
-    priority_map["MEDIUM"]: TerminalColours.PRIORITY_MEDIUM,
-    priority_map["HIGH"]: TerminalColours.PRIORITY_HIGH,
-}
-extensions = []
+parser = argparse.ArgumentParser()
+parser.add_argument("root", default=os.getcwd(), nargs="?", help="Path from which to start search")
+args = parser.parse_args()
+
+default_priority = -1
 found_matches = defaultdict(list)
 text_padding = 2
 longest_file_name = ""
 longest_line_number = ""
 longest_line = ""
-is_case_sensitive = False
-
-parser = argparse.ArgumentParser()
-parser.add_argument("root", default=os.getcwd(), nargs="?", help="Path from which to start search")
-args = parser.parse_args()
-
 root = args.root
 config = {}
 
@@ -101,14 +114,17 @@ is_case_sensitive = config["is_case_sensitive"]
 tags = config["tags"]
 extensions = config["extensions"]
 is_verbose = config["is_verbose"]
+priorities = config["priorities"]
+priority_value_map = get_priority_value_map(priorities)
+priority_colours = get_priority_colours(priority_value_map)
 
 for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
     for file_name in files_of_extension:
         if is_verbose:
-            print(file_name)
+            print("Searching: " + file_name)
 
         try:
-            for tag, match in find_matches(file_name):
+            for tag, match in find_matches(file_name, priority_value_map):
                 found_matches[tag].append(match)
         except IsADirectoryError:
             pass
