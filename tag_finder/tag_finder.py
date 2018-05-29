@@ -3,10 +3,9 @@
 
 from collections import defaultdict
 from itertools import groupby
-import argparse
+from pathlib import Path
 import glob
 import json
-import os
 import re
 import statistics
 import sys
@@ -45,7 +44,7 @@ def get_truncated_text(text, max_length, truncate_indicator="..."):
     truncate_at = max_length - len(truncate_indicator)
     return (text[:truncate_at] + truncate_indicator) if len(text) > truncate_at else text
 
-def find_matches(file_name, priority_value_map):
+def find_matches(tags, file_name, priority_value_map, is_case_sensitive):
     with open(file_name) as f:
         for number, line in enumerate(f):
             for tag in tags:
@@ -91,58 +90,53 @@ def get_priority_colours(priority_value_map):
 def print_right_pad(text, pad_size, is_end=False):
     print(text + pad_size * " ", end = "\n" if is_end else "")
 
-def parse_arg_array(arr):
-    return [x.strip() for x in arr.split(",")]
+def main(args):
+    found_matches = defaultdict(list)
+    text_padding = 2
+    root = args.root
+    config = {}
 
-parser = argparse.ArgumentParser()
-parser.add_argument("root", default=os.getcwd(), nargs="?", help="Path from which to start search")
-args = parser.parse_args()
+    with open(str(Path.home()) + "/.tag_finder/config.json") as config_json:
+        config = json.load(config_json)
 
-default_priority = -1
-found_matches = defaultdict(list)
-text_padding = 2
+    is_case_sensitive = config["is_case_sensitive"]
+    tags = config["tags"]
+    extensions = config["extensions"]
+    is_verbose = config["is_verbose"]
+    priorities = config["priorities"]
+    priority_value_map = get_priority_value_map(priorities)
+    priority_colours = get_priority_colours(priority_value_map)
+
+    for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
+        for file_name in files_of_extension:
+            if is_verbose:
+                print("Searching: " + file_name)
+
+            try:
+                for tag, match in find_matches(tags, file_name, priority_value_map, is_case_sensitive):
+                    found_matches[tag].append(match)
+            except IsADirectoryError:
+                pass
+            except UnicodeDecodeError:
+                pass
+
+    for tag in found_matches:
+        found_matches[tag].sort(key=lambda x: x.priority, reverse=True)
+
+        print("\n")
+        print(TerminalColours.HEADER + (tag if is_case_sensitive else tag.upper()) + TerminalColours.END)
+        print("--------------------------------------------------")
+
+        for match in found_matches[tag]:
+            priority_colour = priority_colours[match.priority]
+
+            print_right_pad(match.file_name, len(longest_file_name) - len(match.file_name) + text_padding)
+            print_right_pad(":" + match.line_number, len(longest_line_number) - len(match.line_number) + text_padding)
+            print_right_pad(priority_colour + match.line + TerminalColours.END, len(longest_line) - len(match.line) + text_padding, True)
+
+    print("\n")
+
 longest_file_name = ""
 longest_line_number = ""
 longest_line = ""
-root = args.root
-config = {}
-
-with open("config.json") as config_json:
-    config = json.load(config_json)
-
-is_case_sensitive = config["is_case_sensitive"]
-tags = config["tags"]
-extensions = config["extensions"]
-is_verbose = config["is_verbose"]
-priorities = config["priorities"]
-priority_value_map = get_priority_value_map(priorities)
-priority_colours = get_priority_colours(priority_value_map)
-
-for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
-    for file_name in files_of_extension:
-        if is_verbose:
-            print("Searching: " + file_name)
-
-        try:
-            for tag, match in find_matches(file_name, priority_value_map):
-                found_matches[tag].append(match)
-        except IsADirectoryError:
-            pass
-        except UnicodeDecodeError:
-            pass
-
-for tag in found_matches:
-    found_matches[tag].sort(key=lambda x: x.priority, reverse=True)
-
-    print("\n")
-    print(TerminalColours.HEADER + (tag if is_case_sensitive else tag.upper()) + TerminalColours.END)
-    print("--------------------------------------------------")
-
-    for match in found_matches[tag]:
-        priority_colour = priority_colours[match.priority]
-
-        print_right_pad(match.file_name, len(longest_file_name) - len(match.file_name) + text_padding)
-        print_right_pad(":" + match.line_number, len(longest_line_number) - len(match.line_number) + text_padding)
-        print_right_pad(priority_colour + match.line + TerminalColours.END, len(longest_line) - len(match.line) + text_padding, True)
-
-print("\n")
+default_priority = -1
