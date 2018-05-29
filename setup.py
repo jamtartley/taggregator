@@ -1,3 +1,6 @@
+#! /usr/bin/env python3
+#! -*- coding: utf-8 -*-
+
 import setuptools
 
 with open("README.md", "r") as fh:
@@ -5,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="tag_finder",
-    version="0.0.2",
+    version="0.0.3",
     author="Sam Hartley",
     author_email="sam@deadcentaur.com",
     description="Find lines of source code you have tagged with custom categories",

@@ -4,8 +4,10 @@
 from collections import defaultdict
 from itertools import groupby
 from pathlib import Path
+from shutil import copyfile
 import glob
 import json
+import os
 import re
 import statistics
 import sys
@@ -90,27 +92,57 @@ def get_priority_colours(priority_value_map):
 def print_right_pad(text, pad_size, is_end=False):
     print(text + pad_size * " ", end = "\n" if is_end else "")
 
+def verbose_log(text, append_new_line=False):
+    if not is_verbose:
+        return
+
+    print(text + ("\n" if append_new_line else ""))
+
 def main(args):
+    global is_verbose
+
     found_matches = defaultdict(list)
     text_padding = 2
     root = args.root
+    is_verbose = args.verbose
     config = {}
+    config_path = ""
+    current_dir_config = os.getcwd() + "/.tag_finder/config.json"
+    home_path = str(Path.home()) + "/.tag_finder/config.json"
 
-    with open(str(Path.home()) + "/.tag_finder/config.json") as config_json:
+    if os.path.isfile(current_dir_config):
+        config_path = current_dir_config
+    else:
+        if os.path.isfile(home_path):
+            config_path = home_path
+
+    if config_path != "":
+        verbose_log("Config found at: " + config_path, True)
+    else:
+        verbose_log("No config file found!")
+        home_config_path_dir = str(Path.home()) + "/.tag_finder"
+
+        if not os.path.exists(home_config_path_dir):
+            os.makedirs(home_config_path_dir)
+            verbose_log("Creating dir ~/.tag_finder")
+
+        copyfile("tag_finder/default_config.json", home_config_path_dir + "/config.json")
+        verbose_log("Creating default config file at: " + home_path)
+        config_path = home_path
+
+    with open(config_path) as config_json:
         config = json.load(config_json)
 
     is_case_sensitive = config["is_case_sensitive"]
     tags = config["tags"]
     extensions = config["extensions"]
-    is_verbose = config["is_verbose"]
     priorities = config["priorities"]
     priority_value_map = get_priority_value_map(priorities)
     priority_colours = get_priority_colours(priority_value_map)
 
     for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
         for file_name in files_of_extension:
-            if is_verbose:
-                print("Searching: " + file_name)
+            verbose_log("Searching: " + file_name)
 
             try:
                 for tag, match in find_matches(tags, file_name, priority_value_map, is_case_sensitive):
@@ -140,3 +172,4 @@ longest_file_name = ""
 longest_line_number = ""
 longest_line = ""
 default_priority = -1
+is_verbose = False
