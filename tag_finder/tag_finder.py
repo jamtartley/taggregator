@@ -46,22 +46,21 @@ def get_truncated_text(text, max_length, truncate_indicator="..."):
     truncate_at = max_length - len(truncate_indicator)
     return (text[:truncate_at] + truncate_indicator) if len(text) > truncate_at else text
 
-def find_matches(tags, file_name, priority_value_map, is_case_sensitive):
+def find_matches(tags, tag_marker, file_name, priority_value_map, is_case_sensitive):
     with open(file_name) as f:
         for number, line in enumerate(f):
             for tag in tags:
                 processed_tag = tag if is_case_sensitive else tag.upper()
                 processed_line = line if is_case_sensitive else line.upper()
+                regex = re.compile(re.escape(tag_marker + processed_tag) + r"\(([^)]+)\)")
+                priority_match = regex.search(processed_line)
 
-                if processed_tag in processed_line:
+                if priority_match is not None:
                     truncated_line = get_truncated_text(line.strip(), 100)
                     priority_char_idx = processed_line.find(processed_tag)
-                    priority_match = re.search(r"\(([A-Za-z0-9_]+)\)", processed_line)
                     priority = default_priority
-
-                    if priority_match is not None:
-                        priority_text = priority_match.group(1)
-                        priority = priority_value_map.get(priority_text, default_priority)
+                    priority_text = priority_match.group(1)
+                    priority = priority_value_map.get(priority_text, default_priority)
 
                     yield tag, Match(file_name, number, truncated_line, priority)
 
@@ -134,6 +133,7 @@ def main(args):
         config = json.load(config_json)
 
     is_case_sensitive = config["is_case_sensitive"]
+    tag_marker = config["tag_marker"]
     tags = config["tags"]
     extensions = config["extensions"]
     priorities = config["priorities"]
@@ -145,7 +145,7 @@ def main(args):
             verbose_log("Searching: " + file_name)
 
             try:
-                for tag, match in find_matches(tags, file_name, priority_value_map, is_case_sensitive):
+                for tag, match in find_matches(tags, tag_marker, file_name, priority_value_map, is_case_sensitive):
                     found_matches[tag].append(match)
             except IsADirectoryError:
                 pass
