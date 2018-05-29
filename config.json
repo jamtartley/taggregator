@@ -1,0 +1,6 @@
+{
+    "is_case_sensitive": true,
+    "tags": ["@TODO", "@BUG"],
+    "extensions": ["txt"],
+    "is_verbose": true
+}

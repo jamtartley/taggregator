@@ -2,6 +2,7 @@ from collections import defaultdict
 from itertools import groupby
 import argparse
 import glob
+import json
 import os
 import re
 import sys
@@ -43,7 +44,7 @@ def get_truncated_text(text, max_length, truncate_indicator="..."):
 def find_matches(file_name):
     global priority_map
 
-    with open(file_name, "r") as f:
+    with open(file_name) as f:
         for number, line in enumerate(f):
             for tag in tags:
                 processed_tag = tag if is_case_sensitive else tag.upper()
@@ -55,7 +56,7 @@ def find_matches(file_name):
                     priority_match = re.search(r"\(([A-Za-z0-9_]+)\)", processed_line)
                     priority = priority_map["NONE"]
 
-                    if priority_match is not None:
+                    if priority_match is not None and priority_match in priority_map:
                         priority = priority_map[priority_match.group(1).upper()]
 
                     yield tag, Match(file_name, number, truncated_line, priority)
@@ -88,17 +89,18 @@ is_case_sensitive = False
 
 parser = argparse.ArgumentParser()
 parser.add_argument("root", default=os.getcwd(), nargs="?", help="Path from which to start search")
-parser.add_argument("-e", "--extensions", default="*", help="Comma-separated list of extensions to test")
-parser.add_argument("-t", "--tags", default="@HACK, @TODO, @FIXME, @CLEANUP, @BUG, @ROBUSTNESS", help="Comma-separated list of tags to search for")
-parser.add_argument("-c", "--case_sensitive", action="store_true", help="Set if tag search should be case sensitive")
-parser.add_argument("-v", "--verbose", action="store_true", help="Set if program should print verbose output")
 args = parser.parse_args()
 
 root = args.root
-extensions = parse_arg_array(args.extensions)
-tags = parse_arg_array(args.tags)
-is_case_sensitive = args.case_sensitive
-is_verbose = args.verbose
+config = {}
+
+with open("config.json") as config_json:
+    config = json.load(config_json)
+
+is_case_sensitive = config["is_case_sensitive"]
+tags = config["tags"]
+extensions = config["extensions"]
+is_verbose = config["is_verbose"]
 
 for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
     for file_name in files_of_extension:
