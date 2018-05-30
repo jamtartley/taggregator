@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 #! -*- coding: utf-8 -*-
 
+from . import printer
 from collections import defaultdict
 from itertools import groupby
 from pathlib import Path
@@ -11,14 +12,6 @@ import pkg_resources
 import re
 import statistics
 import sys
-
-class TerminalColours():
-    END = '\033[0m'
-    HEADER = '\033[1;37m'
-    PRIORITY_NONE = END
-    PRIORITY_LOW = '\033[0;32m'
-    PRIORITY_MEDIUM = '\033[0;33m'
-    PRIORITY_HIGH = '\033[0;31m'
 
 class Match:
     def __init__(self, file_name, line_number, line, priority):
@@ -35,16 +28,11 @@ class Match:
         longest_line_number = max([str(line_number), longest_line_number], key=len)
         longest_line = max([line, longest_line], key=len)
 
-
     def __str__(self):
         return self.file_name
 
 def type_name_to_extension(t):
     return "/**/*." + t
-
-def get_truncated_text(text, max_length, truncate_indicator="..."):
-    truncate_at = max_length - len(truncate_indicator)
-    return (text[:truncate_at] + truncate_indicator) if len(text) > truncate_at else text
 
 def find_matches(tags, tag_marker, file_name, priority_value_map, is_case_sensitive):
     with open(file_name) as f:
@@ -56,7 +44,7 @@ def find_matches(tags, tag_marker, file_name, priority_value_map, is_case_sensit
                 priority_match = regex.search(processed_line)
 
                 if priority_match is not None:
-                    truncated_line = get_truncated_text(line.strip(), 100)
+                    truncated_line = printer.get_truncated_text(line.strip(), 100)
                     priority_char_idx = processed_line.find(processed_tag)
                     priority = default_priority
                     priority_text = priority_match.group(1)
@@ -73,33 +61,20 @@ def get_priority_value_map(all_priorities):
     return priority_value_map
 
 def get_priority_colours(priority_value_map):
-    colour_map = {default_priority: TerminalColours.PRIORITY_NONE}
+    colour_map = {default_priority: printer.TerminalColours.PRIORITY_NONE}
     median_value = statistics.median(priority_value_map.values())
 
     for p in priority_value_map:
         priority_value = priority_value_map[p]
 
         if priority_value < median_value:
-            colour_map[priority_value] = TerminalColours.PRIORITY_LOW
+            colour_map[priority_value] = printer.TerminalColours.PRIORITY_LOW
         elif priority_value > median_value:
-            colour_map[priority_value] = TerminalColours.PRIORITY_HIGH
+            colour_map[priority_value] = printer.TerminalColours.PRIORITY_HIGH
         else:
-            colour_map[priority_value] = TerminalColours.PRIORITY_MEDIUM
+            colour_map[priority_value] = printer.TerminalColours.PRIORITY_MEDIUM
 
     return colour_map
-
-def print_right_pad(text, pad_size, is_end=False):
-    print(text + pad_size * " ", end = "\n" if is_end else "")
-
-def log(text, tag_text, append_new_line=False):
-    log_tag = "[%s] " %(tag_text.upper())
-    print(log_tag + text + ("\n" if append_new_line else ""))
-
-def verbose_log(text, tag_text, append_new_line=False):
-    if not is_verbose:
-        return
-
-    log(text, tag_text, append_new_line)
 
 def get_existing_config_path(current_dir_config, home_config):
     if os.path.isfile(current_dir_config):
@@ -113,9 +88,9 @@ def get_existing_config_path(current_dir_config, home_config):
 def get_created_config_path(home_config_dir_path, home_config_file_path, default_config_json):
     if not os.path.exists(home_config_dir_path):
         os.makedirs(home_config_dir_path)
-        log("Creating default config directory at: " + home_config_dir_path, "information")
+        printer.log("Creating default config directory at: " + home_config_dir_path, "information")
 
-    log("Creating default config file at: " + home_config_file_path, "information")
+    printer.log("Creating default config file at: " + home_config_file_path, "information")
 
     with open(home_config_file_path, "w") as home_file:
         json.dump(default_config_json, home_file, indent=4)
@@ -140,21 +115,23 @@ def get_config_file():
     config_path = get_existing_config_path(current_dir_config_file_path, home_config_file_path)
 
     if config_path != "":
-        verbose_log("Config found at: " + config_path, "information", True)
+        printer.verbose_log("Config found at: " + config_path, "information", append_new_line=True)
     else:
-        log("No config file found!", "warning")
+        printer.log("No config file found!", "warning")
         config_path = get_created_config_path(home_config_dir_path, home_config_file_path, default_config_json)
 
+    # @ROBUSTNESS(MEDIUM): Detect malformed config file
+    # We should be analysing the file we found and if it isn't in the format we expect
+    # we should be logging a warning and either giving the user the chance to abort and fix
+    # it or overwrite it with default settings
     with open(config_path) as config_json:
         return json.load(config_json)
 
 def main(args):
-    global is_verbose
-
     found_matches = defaultdict(list)
     text_padding = 2
     root = args.root
-    is_verbose = args.verbose
+    printer.is_verbose = args.verbose
 
     config = get_config_file()
 
@@ -168,7 +145,7 @@ def main(args):
 
     for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
         for file_name in files_of_extension:
-            verbose_log(file_name, "searching for tags")
+            printer.verbose_log(file_name, "searching for tags")
 
             try:
                 for tag, match in find_matches(tags, tag_marker, file_name, priority_value_map, is_case_sensitive):
@@ -181,16 +158,17 @@ def main(args):
     for tag in found_matches:
         found_matches[tag].sort(key=lambda x: x.priority, reverse=True)
 
-        print("\n")
-        print(TerminalColours.HEADER + (tag if is_case_sensitive else tag.upper()) + TerminalColours.END)
-        print("--------------------------------------------------")
+        printer.print_tag_header(tag if is_case_sensitive else tag.upper())
 
         for match in found_matches[tag]:
             priority_colour = priority_colours[match.priority]
+            file_name_padding = len(longest_file_name) - len(match.file_name) + text_padding
+            line_number_padding = len(longest_line_number) - len(match.line_number) + text_padding
+            line_padding = len(longest_line) - len(match.line) + text_padding
 
-            print_right_pad(match.file_name, len(longest_file_name) - len(match.file_name) + text_padding)
-            print_right_pad(":" + match.line_number, len(longest_line_number) - len(match.line_number) + text_padding)
-            print_right_pad(priority_colour + match.line + TerminalColours.END, len(longest_line) - len(match.line) + text_padding, True)
+            printer.print_right_pad(match.file_name, file_name_padding) 
+            printer.print_right_pad(":" + match.line_number, line_number_padding)
+            printer.print_right_pad(priority_colour + match.line + printer.TerminalColours.END, line_padding, is_end=True)
 
     print("\n")
 
@@ -198,4 +176,3 @@ longest_file_name = ""
 longest_line_number = ""
 longest_line = ""
 default_priority = -1
-is_verbose = False
