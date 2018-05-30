@@ -15,18 +15,10 @@ import sys
 
 class Match:
     def __init__(self, file_name, line_number, line, priority):
-        global longest_file_name
-        global longest_line_number
-        global longest_line
-
         self.file_name = file_name
         self.line_number = str(line_number)
         self.line = line
         self.priority = priority
-
-        longest_file_name = max([file_name, longest_file_name], key=len)
-        longest_line_number = max([str(line_number), longest_line_number], key=len)
-        longest_line = max([line, longest_line], key=len)
 
     def __str__(self):
         return self.file_name
@@ -48,6 +40,8 @@ def find_matches(tag_regex, file_name, priority_value_map, is_case_sensitive):
 
             processed_line = line if is_case_sensitive else line.upper()
             truncated_line = printer.get_truncated_text(line.strip(), 100)
+
+            # @SPEED(LOW) Regex search of processed line
             priority_match = tag_regex.search(processed_line)
 
             if priority_match is not None:
@@ -108,7 +102,7 @@ def get_default_config_json():
         return json.loads(default_config_file.read())
 
 def get_config_file():
-    # Look for existing config in first {current dir}/.tag_finder and then ~/.tag_finder 
+    # Look for existing config in first {current dir}/.tag_finder and then ~/.tag_finder
     # If neither of these exist, create ~/.tag_finder and copy in the default config
     # file from bundle resources
     config_folder_name = "/.tag_finder/"
@@ -135,6 +129,9 @@ def get_config_file():
 def main(args):
     found_matches = defaultdict(list)
     text_padding = 2
+    longest_file_name = ""
+    longest_line_number = ""
+    longest_line = ""
 
     config = get_config_file()
     root = args.root
@@ -167,6 +164,11 @@ def main(args):
             try:
                 for tag, match in find_matches(tag_regex, file_name, priority_value_map, is_case_sensitive):
                     found_matches[tag].append(match)
+
+                    longest_file_name = max([match.file_name, longest_file_name], key=len)
+                    longest_line_number = max([str(match.line_number), longest_line_number], key=len)
+                    longest_line = max([match.line, longest_line], key=len)
+
             except IsADirectoryError:
                 pass
             except UnicodeDecodeError:
@@ -183,13 +185,10 @@ def main(args):
             line_number_padding = len(longest_line_number) - len(match.line_number) + text_padding
             line_padding = len(longest_line) - len(match.line) + text_padding
 
-            printer.print_right_pad(match.file_name, file_name_padding) 
+            printer.print_right_pad(match.file_name, file_name_padding)
             printer.print_right_pad(":" + match.line_number, line_number_padding)
             printer.print_right_pad(priority_colour + match.line + printer.TerminalColours.END, line_padding, is_end=True)
 
     print("\n")
 
-longest_file_name = ""
-longest_line_number = ""
-longest_line = ""
 default_priority = -1
