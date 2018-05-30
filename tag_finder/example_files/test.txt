@@ -1,10 +1,11 @@
 // @TODO(LOW) ejrnoferf
 // @TODO(MEDIUM) ontreijangjafkwl
 // @TODO(HIGH)  qe
-// @HACK(HIGH) nsbrithgoeuajoi hwjt
+// @HACK(HIGH) @ROBUSTNESS(LOW) nsbrithgoeuajoi hwjt
 // @ROBUSTNESS(LOW) guyiokpijhejkowjrhb nd
 // @ROBUSTNESS(NEGLIGIBLE) guyiokpijhejkowjrhb nd
-// @ROBUSTNESS(MEDIUM) hbjnkstmdjyrgmlstlb
+// @ROBUSTNESS(MEDIUM) @SPEED hbjnkstmdjyrgmlstlb
+// @SPEED noerngore howno gm
 // @TODO(LOW) hgiurwn ojgo roig joehg ojeiohe
 // @TODO(CRITICAL) FIX THIS!!!!!!
 // @TODO(CRITICAL) bnjdvskcmerbnojrelmfw,l m erarng k

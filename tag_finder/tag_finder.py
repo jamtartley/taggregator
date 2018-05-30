@@ -34,21 +34,29 @@ class Match:
 def type_name_to_extension(t):
     return "/**/*." + t
 
-def find_matches(tags, tag_regex_map, file_name, priority_value_map, is_case_sensitive):
+def get_tag_regex(tag_marker, tags):
+    tag_string = "|".join(tags)
+
+    # Return regex which will match (for example): @(HACK|SPEED|TODO)(LOW|MEDIUM)
+    return re.compile(tag_marker + "(" + tag_string + ")" + r"\(*([^)]+)\)*")
+
+def find_matches(tag_regex, file_name, priority_value_map, is_case_sensitive):
     with open(file_name) as f:
         for number, line in enumerate(f):
-            for tag in tags:
-                processed_line = line if is_case_sensitive else line.upper()
-                priority_match = tag_regex_map[tag].search(processed_line)
+            # @ROBUSTNESS(MEDIUM) Needs to handle multiple tags per line
+            # Currently this only works with the first-matched tag
 
-                if priority_match is not None:
-                    truncated_line = printer.get_truncated_text(line.strip(), 100)
-                    priority_char_idx = processed_line.find(tag)
-                    priority = default_priority
-                    priority_text = priority_match.group(1)
-                    priority = priority_value_map.get(priority_text, default_priority)
+            processed_line = line if is_case_sensitive else line.upper()
+            truncated_line = printer.get_truncated_text(line.strip(), 100)
+            priority_match = tag_regex.search(processed_line)
 
-                    yield tag, Match(file_name, number, truncated_line, priority)
+            if priority_match is not None:
+                priority = default_priority
+                tag = priority_match.group(1)
+                priority_text = priority_match.group(2)
+                priority = priority_value_map.get(priority_text, default_priority)
+
+                yield tag, Match(file_name, number, truncated_line, priority)
 
 def get_priority_value_map(all_priorities):
     priority_value_map = {}
@@ -150,14 +158,14 @@ def main(args):
     args_tags = [tag.strip() for tag in args.tags.split(",")] if args.tags is not None else None
     raw_tags = args_tags if args_tags is not None else config["tags"]
     tags = [re.escape(tag if is_case_sensitive else tag.upper()) for tag in raw_tags]
-    tag_regex_map = {t:r for t,r in [(tag, re.compile(tag_marker + tag + r"\(([^)]+)\)")) for tag in tags]}
+    tag_regex = get_tag_regex(tag_marker, tags)
 
     for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
         for file_name in files_of_extension:
             printer.verbose_log(file_name, "searching for tags")
 
             try:
-                for tag, match in find_matches(tags, tag_regex_map, file_name, priority_value_map, is_case_sensitive):
+                for tag, match in find_matches(tag_regex, file_name, priority_value_map, is_case_sensitive):
                     found_matches[tag].append(match)
             except IsADirectoryError:
                 pass
