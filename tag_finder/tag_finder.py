@@ -34,18 +34,16 @@ class Match:
 def type_name_to_extension(t):
     return "/**/*." + t
 
-def find_matches(tags, tag_marker, file_name, priority_value_map, is_case_sensitive):
+def find_matches(tags, tag_regex_map, file_name, priority_value_map, is_case_sensitive):
     with open(file_name) as f:
         for number, line in enumerate(f):
             for tag in tags:
-                processed_tag = tag if is_case_sensitive else tag.upper()
                 processed_line = line if is_case_sensitive else line.upper()
-                regex = re.compile(re.escape(tag_marker + processed_tag) + r"\(([^)]+)\)")
-                priority_match = regex.search(processed_line)
+                priority_match = tag_regex_map[tag].search(processed_line)
 
                 if priority_match is not None:
                     truncated_line = printer.get_truncated_text(line.strip(), 100)
-                    priority_char_idx = processed_line.find(processed_tag)
+                    priority_char_idx = processed_line.find(tag)
                     priority = default_priority
                     priority_text = priority_match.group(1)
                     priority = priority_value_map.get(priority_text, default_priority)
@@ -133,25 +131,33 @@ def main(args):
     config = get_config_file()
     root = args.root
 
-    # Allow temporary overriding of tags from command line, check if command line flag
-    # set. If yes use them, otherwise default to config file
-    args_tags = [tag.strip() for tag in args.tags.split(",")] if args.tags is not None else None
-    tags = args_tags if args_tags is not None else config["tags"]
     printer.is_verbose = args.verbose
 
     is_case_sensitive = config["is_case_sensitive"]
-    tag_marker = config["tag_marker"]
+    tag_marker = re.escape(config["tag_marker"])
     extensions = config["extensions"]
     priorities = config["priorities"]
     priority_value_map = get_priority_value_map(priorities)
     priority_colours = get_priority_colours(priority_value_map)
+
+    # Allow temporary overriding of tags from command line, check if command line flag
+    # set. If yes use them, otherwise default to config file.
+    #
+    # We also do a large amount of the regex pre-processing we need to do here (escaping
+    # special characters and compiling) so that we can avoid recomputing during the actual
+    # file parsing phase.
+
+    args_tags = [tag.strip() for tag in args.tags.split(",")] if args.tags is not None else None
+    raw_tags = args_tags if args_tags is not None else config["tags"]
+    tags = [re.escape(tag if is_case_sensitive else tag.upper()) for tag in raw_tags]
+    tag_regex_map = {t:r for t,r in [(tag, re.compile(tag_marker + tag + r"\(([^)]+)\)")) for tag in tags]}
 
     for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
         for file_name in files_of_extension:
             printer.verbose_log(file_name, "searching for tags")
 
             try:
-                for tag, match in find_matches(tags, tag_marker, file_name, priority_value_map, is_case_sensitive):
+                for tag, match in find_matches(tags, tag_regex_map, file_name, priority_value_map, is_case_sensitive):
                     found_matches[tag].append(match)
             except IsADirectoryError:
                 pass
