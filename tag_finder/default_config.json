@@ -1,5 +1,5 @@
 {
-    "is_case_sensitive": true,
+    "is_case_sensitive": false,
     "tag_marker": "@",
     "tags": [
         "TODO",
@@ -14,7 +14,6 @@
         "HIGH"
     ],
     "extensions": [
-        "txt",
-        "cs"
+        "*"
     ]
 }

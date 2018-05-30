@@ -91,11 +91,62 @@ def get_priority_colours(priority_value_map):
 def print_right_pad(text, pad_size, is_end=False):
     print(text + pad_size * " ", end = "\n" if is_end else "")
 
-def verbose_log(text, append_new_line=False):
+def log(text, tag_text, append_new_line=False):
+    log_tag = "[%s] " %(tag_text.upper())
+    print(log_tag + text + ("\n" if append_new_line else ""))
+
+def verbose_log(text, tag_text, append_new_line=False):
     if not is_verbose:
         return
 
-    print(text + ("\n" if append_new_line else ""))
+    log(text, tag_text, append_new_line)
+
+def get_existing_config_path(current_dir_config, home_config):
+    if os.path.isfile(current_dir_config):
+        return current_dir_config
+    else:
+        if os.path.isfile(home_config):
+            return home_config
+
+    return ""
+
+def get_created_config_path(home_config_dir_path, home_config_file_path, default_config_json):
+    if not os.path.exists(home_config_dir_path):
+        os.makedirs(home_config_dir_path)
+        log("Creating default config directory at: " + home_config_dir_path, "information")
+
+    log("Creating default config file at: " + home_config_file_path, "information")
+
+    with open(home_config_file_path, "w") as home_file:
+        json.dump(default_config_json, home_file, indent=4)
+
+    return home_config_file_path
+
+def get_default_config_json():
+    with open(pkg_resources.resource_filename(__name__, "default_config.json"), encoding="utf-8") as default_config_file:
+        return json.loads(default_config_file.read())
+
+def get_config_file():
+    # Look for existing config in first {current dir}/.tag_finder and then ~/.tag_finder 
+    # If neither of these exist, create ~/.tag_finder and copy in the default config
+    # file from bundle resources
+    config_folder_name = "/.tag_finder/"
+    config_file_name = "config.json"
+    current_dir_config_file_path = os.getcwd() + config_folder_name + config_file_name
+    home_config_dir_path = str(Path.home()) + config_folder_name
+    home_config_file_path = home_config_dir_path + config_file_name
+    config = {}
+    default_config_json = get_default_config_json()
+    config_path = get_existing_config_path(current_dir_config_file_path, home_config_file_path)
+
+    if config_path != "":
+        verbose_log("Config found at: " + config_path, "information", True)
+    else:
+        log("No config file found!", "warning")
+        config_path = get_created_config_path(home_config_dir_path, home_config_file_path, default_config_json)
+
+    with open(config_path) as config_json:
+        return json.load(config_json)
 
 def main(args):
     global is_verbose
@@ -104,45 +155,8 @@ def main(args):
     text_padding = 2
     root = args.root
     is_verbose = args.verbose
-    config = {}
-    config_path = ""
-    current_dir_config = os.getcwd() + "/.tag_finder/config.json"
-    home_path = str(Path.home()) + "/.tag_finder/config.json"
-    default_config_json = ""
 
-    with open(pkg_resources.resource_filename(__name__, "default_config.json"), encoding="utf-8") as default_config_file:
-        default_config_json = json.loads(default_config_file.read())
-
-    # Look for existing config in first {current dir}/.tag_finder and then ~/.tag_finder 
-    # If neither of these exist, create ~/.tag_finder and copy in the default config
-    # file from bundle resources
-
-    # @REFACTOR(MEDIUM): Move config file search/creation to its own method
-    if os.path.isfile(current_dir_config):
-        config_path = current_dir_config
-    else:
-        if os.path.isfile(home_path):
-            config_path = home_path
-
-    if config_path != "":
-        verbose_log("Config found at: " + config_path, True)
-    else:
-        verbose_log("No config file found!")
-        home_config_path_dir = str(Path.home()) + "/.tag_finder"
-
-        if not os.path.exists(home_config_path_dir):
-            os.makedirs(home_config_path_dir)
-            verbose_log("Creating dir ~/.tag_finder")
-
-        verbose_log("Creating default config file at: " + home_path)
-
-        with open(home_path, "w") as home_file:
-            json.dump(default_config_json, home_file, indent=4)
-
-        config_path = home_path
-
-    with open(config_path) as config_json:
-        config = json.load(config_json)
+    config = get_config_file()
 
     is_case_sensitive = config["is_case_sensitive"]
     tag_marker = config["tag_marker"]
@@ -154,7 +168,7 @@ def main(args):
 
     for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
         for file_name in files_of_extension:
-            verbose_log("Searching: " + file_name)
+            verbose_log(file_name, "searching for tags")
 
             try:
                 for tag, match in find_matches(tags, tag_marker, file_name, priority_value_map, is_case_sensitive):
