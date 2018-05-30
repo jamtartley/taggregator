@@ -1,7 +1,20 @@
 {
     "is_case_sensitive": true,
     "tag_marker": "@",
-    "tags": ["TODO", "HACK", "SPEED", "ROBUSTNESS", "CLEANUP"],
-    "priorities": ["NEGLIGIBLE", "LOW", "MEDIUM", "HIGH", "CRITICAL"],
-    "extensions": ["txt", "cs"]
+    "tags": [
+        "TODO",
+        "HACK",
+        "SPEED",
+        "ROBUSTNESS",
+        "CLEANUP"
+    ],
+    "priorities": [
+        "LOW",
+        "MEDIUM",
+        "HIGH"
+    ],
+    "extensions": [
+        "txt",
+        "cs"
+    ]
 }

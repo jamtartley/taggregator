@@ -4,10 +4,10 @@
 from collections import defaultdict
 from itertools import groupby
 from pathlib import Path
-from shutil import copyfile
 import glob
 import json
 import os
+import pkg_resources
 import re
 import statistics
 import sys
@@ -108,7 +108,16 @@ def main(args):
     config_path = ""
     current_dir_config = os.getcwd() + "/.tag_finder/config.json"
     home_path = str(Path.home()) + "/.tag_finder/config.json"
+    default_config_json = ""
 
+    with open(pkg_resources.resource_filename(__name__, "default_config.json"), encoding="utf-8") as default_config_file:
+        default_config_json = json.loads(default_config_file.read())
+
+    # Look for existing config in first {current dir}/.tag_finder and then ~/.tag_finder 
+    # If neither of these exist, create ~/.tag_finder and copy in the default config
+    # file from bundle resources
+
+    # @REFACTOR(MEDIUM): Move config file search/creation to its own method
     if os.path.isfile(current_dir_config):
         config_path = current_dir_config
     else:
@@ -125,8 +134,11 @@ def main(args):
             os.makedirs(home_config_path_dir)
             verbose_log("Creating dir ~/.tag_finder")
 
-        copyfile("tag_finder/default_config.json", home_config_path_dir + "/config.json")
         verbose_log("Creating default config file at: " + home_path)
+
+        with open(home_path, "w") as home_file:
+            json.dump(default_config_json, home_file, indent=4)
+
         config_path = home_path
 
     with open(config_path) as config_json:
