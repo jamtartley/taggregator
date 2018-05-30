@@ -110,7 +110,6 @@ def get_config_file():
     current_dir_config_file_path = os.getcwd() + config_folder_name + config_file_name
     home_config_dir_path = str(Path.home()) + config_folder_name
     home_config_file_path = home_config_dir_path + config_file_name
-    config = {}
     default_config_json = get_default_config_json()
     config_path = get_existing_config_path(current_dir_config_file_path, home_config_file_path)
 
@@ -130,14 +129,18 @@ def get_config_file():
 def main(args):
     found_matches = defaultdict(list)
     text_padding = 2
-    root = args.root
-    printer.is_verbose = args.verbose
 
     config = get_config_file()
+    root = args.root
+
+    # Allow temporary overriding of tags from command line, check if command line flag
+    # set. If yes use them, otherwise default to config file
+    args_tags = [tag.strip() for tag in args.tags.split(",")] if args.tags is not None else None
+    tags = args_tags if args_tags is not None else config["tags"]
+    printer.is_verbose = args.verbose
 
     is_case_sensitive = config["is_case_sensitive"]
     tag_marker = config["tag_marker"]
-    tags = config["tags"]
     extensions = config["extensions"]
     priorities = config["priorities"]
     priority_value_map = get_priority_value_map(priorities)
