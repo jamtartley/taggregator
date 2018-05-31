@@ -73,47 +73,50 @@ def get_priority_colours(priority_value_map):
 
     return colour_map
 
-def get_existing_config_path(current_dir_config, home_config):
-    if os.path.isfile(current_dir_config):
-        return current_dir_config
+def get_existing_config_path():
+    # Look for existing config in first {current dir}/.tag_finder and then .tag_finder
+    current_dir_config_file_path = os.getcwd() + config_folder_name + config_file_name
+
+    if os.path.isfile(current_dir_config_file_path):
+        return current_dir_config_file_path
     else:
-        if os.path.isfile(home_config):
-            return home_config
+        if os.path.isfile(home_config_file_path):
+            return home_config_file_path
 
-    return ""
+    return None
 
-def get_created_config_path(home_config_dir_path, home_config_file_path, default_config_json):
-    if not os.path.exists(home_config_dir_path):
-        os.makedirs(home_config_dir_path)
-        printer.log("Creating default config directory at: " + home_config_dir_path, "information")
+def create_default_config_file_current_dir():
+    create_default_config_file(current_dir_config_dir_path)
 
-    printer.log("Creating default config file at: " + home_config_file_path, "information")
+def create_default_config_file(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        printer.log("Creating config directory at: " + directory, "information")
 
-    with open(home_config_file_path, "w") as home_file:
-        json.dump(default_config_json, home_file, indent=4)
+    path = directory + config_file_name
+    default_config_json = get_default_config_json()
+    printer.log("Creating config file at: " + path, "information")
 
-    return home_config_file_path
+    # TODO(HIGH) Confirm that user wants to overwrite if config already exists!!
+    with open(path, "w") as config_file:
+        json.dump(default_config_json, config_file, indent=4)
+
+    return path
 
 def get_default_config_json():
     with open(pkg_resources.resource_filename(__name__, "default_config.json"), encoding="utf-8") as default_config_file:
         return json.loads(default_config_file.read())
 
 def get_config_file():
-    # Look for existing config in first {current dir}/.tag_finder and then ~/.tag_finder
-    # If neither of these exist, create ~/.tag_finder and copy in the default config
-    # file from bundle resources
-    config_folder_name = "/.tag_finder/"
-    config_file_name = "config.json"
-    current_dir_config_file_path = os.getcwd() + config_folder_name + config_file_name
-    home_config_dir_path = str(Path.home()) + config_folder_name
-    home_config_file_path = home_config_dir_path + config_file_name
-    config_path = get_existing_config_path(current_dir_config_file_path, home_config_file_path)
+    # If neither ~/.tag_finder or {current dir}/.tag_finder exists,
+    # create ~/.tag_finder and copy in the default config file from bundle resources
+    config_path = get_existing_config_path()
 
-    if config_path != "":
+    if config_path:
         printer.verbose_log("Config found at: " + config_path, "information", append_new_line=True)
     else:
         printer.log("No config file found!", "warning")
-        config_path = get_created_config_path(home_config_dir_path, home_config_file_path, get_default_config_json())
+        config_path = create_default_config_file(home_config_dir_path)
 
     # @ROBUSTNESS(MEDIUM) Detect malformed config file
     # Currently we just exit when we detect that the JSON file is not strictly correct JSON.
@@ -196,3 +199,9 @@ def main(args):
     print("\n")
 
 default_priority = -1
+config_folder_name = "/.tag_finder/"
+config_file_name = "config.json"
+current_dir_config_dir_path = os.getcwd() + config_folder_name
+current_dir_config_file_path = os.getcwd() + config_folder_name + config_file_name
+home_config_dir_path = str(Path.home()) + config_folder_name
+home_config_file_path = home_config_dir_path + config_file_name

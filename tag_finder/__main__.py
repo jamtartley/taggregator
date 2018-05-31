@@ -1,21 +1,39 @@
 #! /usr/bin/env python3
 #! -*- coding: utf-8 -*-
 
+from . import printer
 from . import tag_finder
+from pathlib import Path
 import argparse
 import os
 import sys
 
-def main(args=None):
-    if args is None:
-        args = sys.argv[1:]
+class CommandHandler(object):
+    def __init__(self):
+        parser = argparse.ArgumentParser(description="Search files in a directory for areas with specific tags")
+        parser.add_argument("command",  help="Command to run")
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("root", default=os.getcwd(), nargs="?", help="Path from which to start search")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Set if program should print verbose output")
-    parser.add_argument("-t", "--tags", help="Comma-separated list of tags to search for (temporarily overrides config file)")
-    args = parser.parse_args()
-    tag_finder.main(args)
+        allowed_commands = ["run", "create"]
+        self.was_run_by_default = len(sys.argv) <= 1 or sys.argv[1] not in allowed_commands
+        command = "run" if self.was_run_by_default else sys.argv[1]
+
+        getattr(self, command)()
+
+    def run(self):
+        parser = argparse.ArgumentParser(description="Run the tag finder main program")
+        parser.add_argument("root", default=os.getcwd(), nargs="?", help="Path from which to start search")
+        parser.add_argument("-v", "--verbose", action="store_true", help="Set if program should print verbose output")
+        parser.add_argument("-t", "--tags", help="Comma-separated list of tags to search for (temporarily overrides config file)")
+
+        args = parser.parse_args(sys.argv[1:]) if self.was_run_by_default else parser.parse_args(sys.argv[2:])
+        tag_finder.main(args)
+
+    def create(self):
+        # @TODO(LOW) Allow user to specify path for config file
+        tag_finder.create_default_config_file_current_dir()
+
+def main():
+    CommandHandler()
 
 if __name__ == "__main__":
-    main()
+    CommandHandler()
