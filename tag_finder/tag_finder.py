@@ -4,6 +4,7 @@
 from . import printer
 from collections import defaultdict
 from itertools import groupby
+from json.decoder import JSONDecodeError
 from pathlib import Path
 import glob
 import json
@@ -47,7 +48,6 @@ def find_matches(tag_regex, file_name, priority_value_map, is_case_sensitive):
             matches = tag_regex.findall(processed_line)
 
             for match in matches:
-                priority = default_priority
                 tag = match[0]
                 priority = match[1]
                 priority_idx = priority_value_map.get(priority, default_priority)
@@ -55,26 +55,21 @@ def find_matches(tag_regex, file_name, priority_value_map, is_case_sensitive):
                 yield tag, Match(file_name, number, truncated_line, priority_idx)
 
 def get_priority_value_map(all_priorities):
-    priority_value_map = {}
-
-    for number, p in enumerate(all_priorities):
-        priority_value_map[p] = number
-
-    return priority_value_map
+    # Maps an index of increasing size to each priority ranging from low -> high
+    # e.g. given ['LOW', 'MEDIUM', 'HIGH'] will return {'LOW': 0, 'MEDIUM': 1, 'HIGH': 2}
+    return dict((priority_text, priority_index) for priority_index, priority_text in enumerate(all_priorities))
 
 def get_priority_colours(priority_value_map):
     colour_map = {default_priority: printer.TerminalColours.PRIORITY_NONE}
     median_value = statistics.median(priority_value_map.values())
 
-    for p in priority_value_map:
-        priority_value = priority_value_map[p]
-
-        if priority_value < median_value:
-            colour_map[priority_value] = printer.TerminalColours.PRIORITY_LOW
-        elif priority_value > median_value:
-            colour_map[priority_value] = printer.TerminalColours.PRIORITY_HIGH
+    for p in priority_value_map.values():
+        if p < median_value:
+            colour_map[p] = printer.TerminalColours.PRIORITY_LOW
+        elif p > median_value:
+            colour_map[p] = printer.TerminalColours.PRIORITY_HIGH
         else:
-            colour_map[priority_value] = printer.TerminalColours.PRIORITY_MEDIUM
+            colour_map[p] = printer.TerminalColours.PRIORITY_MEDIUM
 
     return colour_map
 
@@ -112,21 +107,26 @@ def get_config_file():
     current_dir_config_file_path = os.getcwd() + config_folder_name + config_file_name
     home_config_dir_path = str(Path.home()) + config_folder_name
     home_config_file_path = home_config_dir_path + config_file_name
-    default_config_json = get_default_config_json()
     config_path = get_existing_config_path(current_dir_config_file_path, home_config_file_path)
 
     if config_path != "":
         printer.verbose_log("Config found at: " + config_path, "information", append_new_line=True)
     else:
         printer.log("No config file found!", "warning")
-        config_path = get_created_config_path(home_config_dir_path, home_config_file_path, default_config_json)
+        config_path = get_created_config_path(home_config_dir_path, home_config_file_path, get_default_config_json())
 
-    # @ROBUSTNESS(MEDIUM): Detect malformed config file
-    # We should be analysing the file we found and if it isn't in the format we expect
-    # we should be logging a warning and either giving the user the chance to abort and fix
-    # it or overwrite it with default settings
-    with open(config_path) as config_json:
-        return json.load(config_json)
+    # @ROBUSTNESS(MEDIUM) Detect malformed config file
+    # Currently we just exit when we detect that the JSON file is not strictly correct JSON.
+    #
+    # @USABILITY(MEDIUM) We should be further analysing the file we found and maybe giving the user 
+    # the option to fix it themselves or overwrite with the default config file
+    try:
+        with open(config_path) as config_json:
+            return json.load(config_json)
+    except JSONDecodeError as je:
+        error_string = "Error in your tag_finder config file at line %d, column %d, exiting..." %(je.lineno, je.colno)
+        printer.log(error_string, "fatal error")
+        raise SystemExit()
 
 def main(args):
     found_matches = defaultdict(list)
@@ -140,6 +140,7 @@ def main(args):
 
     printer.is_verbose = args.verbose
 
+    # @ROBUSTNESS(MEDIUM) Sanity check values retrieved from config file
     is_case_sensitive = config["is_case_sensitive"]
     tag_marker = re.escape(config["tag_marker"])
     extensions = config["extensions"]

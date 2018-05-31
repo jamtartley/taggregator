@@ -2,6 +2,7 @@
 #! -*- coding: utf-8 -*-
 
 from __future__ import print_function # Fix python2 runtime error with end=x
+from os import get_terminal_size
 
 class TerminalColours():
     END = '\033[0m'
@@ -30,7 +31,7 @@ def verbose_log(text, tag_text, append_new_line=False):
     log(text, tag_text, append_new_line)
 
 def print_tag_header(tag):
-    dash_count = 80
+    dash_count = int(terminal_columns / 2)
     dashes = "-" * dash_count
     print("\n")
     print(dashes)
@@ -38,3 +39,4 @@ def print_tag_header(tag):
     print(dashes)
 
 is_verbose = False
+terminal_columns = get_terminal_size()[0]
