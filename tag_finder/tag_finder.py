@@ -151,7 +151,7 @@ def main(args):
 
     config = get_config_file()
     root = args.root
-
+    should_recurse = not args.disable_recursive_search
     printer.is_verbose = args.verbose
 
     # @ROBUSTNESS(MEDIUM) Sanity check values retrieved from config file
@@ -174,8 +174,9 @@ def main(args):
     tags = [re.escape(tag if is_case_sensitive else tag.upper()) for tag in raw_tags]
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, tags, priority_regex)
+    glob_pattern = root + ("/**/*." if should_recurse else "**/*.")
 
-    for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
+    for files_of_extension in [glob.iglob(glob_pattern + ext, recursive=should_recurse) for ext in extensions]:
         for file_name in files_of_extension:
             printer.verbose_log(file_name, "searching for tags")
 
