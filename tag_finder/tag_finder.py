@@ -28,10 +28,11 @@ def type_name_to_extension(t):
 
 def get_tag_regex(tag_marker, tags, priority_regex):
     tag_string = "|".join(tags)
+    regex_string = tag_marker + "(" + tag_string + ")" + r"\(*(" + priority_regex + ")?\)*" 
 
     # Return regex which will match (for example): @HACK|SPEED|TODO(LOW|MEDIUM)
     # with the priority being an optional match
-    return re.compile(tag_marker + "(" + tag_string + ")" + r"\(*(" + priority_regex + ")?\)*")
+    return re.compile(regex_string)
 
 def get_priority_regex(priorities):
     return "|".join(priorities)
@@ -39,7 +40,7 @@ def get_priority_regex(priorities):
 def find_matches(tag_regex, file_name, priority_value_map, is_case_sensitive):
     with open(file_name) as f:
         for number, line in enumerate(f):
-            processed_line = line if is_case_sensitive else line.upper()
+            processed_line = (line if is_case_sensitive else line.upper()).replace(" ", "")
             truncated_line = printer.get_truncated_text(line.strip(), 100)
 
             # @SPEED(MEDIUM) Regex search of processed line

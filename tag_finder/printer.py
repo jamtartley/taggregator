@@ -1,6 +1,8 @@
 #! /usr/bin/env python3
 #! -*- coding: utf-8 -*-
 
+from __future__ import print_function # Fix python2 runtime error with end=x
+
 class TerminalColours():
     END = '\033[0m'
     HEADER = '\033[1;37m'

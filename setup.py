@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="tag_finder",
-    version="0.0.11",
+    version="0.0.12",
     author="Sam Hartley",
     author_email="sam@deadcentaur.com",
     description="Find lines of source code you have tagged with custom categories",
