@@ -26,31 +26,32 @@ class Match:
 def type_name_to_extension(t):
     return "/**/*." + t
 
-def get_tag_regex(tag_marker, tags):
+def get_tag_regex(tag_marker, tags, priority_regex):
     tag_string = "|".join(tags)
 
-    # Return regex which will match (for example): @(HACK|SPEED|TODO)(LOW|MEDIUM)
-    return re.compile(tag_marker + "(" + tag_string + ")" + r"\(*([^)]+)\)*")
+    # Return regex which will match (for example): @HACK|SPEED|TODO(LOW|MEDIUM)
+    # with the priority being an optional match
+    return re.compile(tag_marker + "(" + tag_string + ")" + r"\(*(" + priority_regex + ")?\)*")
+
+def get_priority_regex(priorities):
+    return "|".join(priorities)
 
 def find_matches(tag_regex, file_name, priority_value_map, is_case_sensitive):
     with open(file_name) as f:
         for number, line in enumerate(f):
-            # @ROBUSTNESS(MEDIUM) Needs to handle multiple tags per line
-            # Currently this only works with the first-matched tag
-
             processed_line = line if is_case_sensitive else line.upper()
             truncated_line = printer.get_truncated_text(line.strip(), 100)
 
-            # @SPEED(LOW) Regex search of processed line
-            priority_match = tag_regex.search(processed_line)
+            # @SPEED(MEDIUM) Regex search of processed line
+            matches = tag_regex.findall(processed_line)
 
-            if priority_match is not None:
+            for match in matches:
                 priority = default_priority
-                tag = priority_match.group(1)
-                priority_text = priority_match.group(2)
-                priority = priority_value_map.get(priority_text, default_priority)
+                tag = match[0]
+                priority = match[1]
+                priority_idx = priority_value_map.get(priority, default_priority)
 
-                yield tag, Match(file_name, number, truncated_line, priority)
+                yield tag, Match(file_name, number, truncated_line, priority_idx)
 
 def get_priority_value_map(all_priorities):
     priority_value_map = {}
@@ -155,7 +156,8 @@ def main(args):
     args_tags = [tag.strip() for tag in args.tags.split(",")] if args.tags is not None else None
     raw_tags = args_tags if args_tags is not None else config["tags"]
     tags = [re.escape(tag if is_case_sensitive else tag.upper()) for tag in raw_tags]
-    tag_regex = get_tag_regex(tag_marker, tags)
+    priority_regex = get_priority_regex(priorities)
+    tag_regex = get_tag_regex(tag_marker, tags, priority_regex)
 
     for files_of_extension in [glob.iglob(root + type_name_to_extension(ext), recursive=True) for ext in extensions]:
         for file_name in files_of_extension:
