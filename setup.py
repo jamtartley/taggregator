@@ -8,13 +8,14 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="tag_finder",
-    version="0.0.12",
+    version="0.0.13",
     author="Sam Hartley",
     author_email="sam@deadcentaur.com",
     description="Find lines of source code you have tagged with custom categories",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/jamtartley/tag_finder",
+    python_requires=">=3",
     include_package_data=True,
     packages=setuptools.find_packages(),
     entry_points={
