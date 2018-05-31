@@ -94,14 +94,25 @@ def create_default_config_file(directory):
         printer.log("Creating config directory at: " + directory, "information")
 
     path = directory + config_file_name
+
+    if os.path.exists(path):
+        while True:
+            answer = input("[WARNING] File already exists, do you wish to overwrite it? (y/n): ").lower().strip()
+            if answer == "y":
+                copy_default_config_to_path(path)
+                return path
+            elif answer == "n":
+                return None
+
+    copy_default_config_to_path(path)
+    return path
+
+def copy_default_config_to_path(path):
     default_config_json = get_default_config_json()
     printer.log("Creating config file at: " + path, "information")
 
-    # TODO(HIGH) Confirm that user wants to overwrite if config already exists!!
     with open(path, "w") as config_file:
         json.dump(default_config_json, config_file, indent=4)
-
-    return path
 
 def get_default_config_json():
     with open(pkg_resources.resource_filename(__name__, "default_config.json"), encoding="utf-8") as default_config_file:
