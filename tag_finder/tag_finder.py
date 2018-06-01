@@ -3,10 +3,10 @@
 
 from . import printer
 from collections import defaultdict
-from itertools import groupby
 from json.decoder import JSONDecodeError
 from pathlib import Path
 import glob
+import itertools
 import json
 import os
 import pkg_resources
@@ -24,33 +24,40 @@ class Match:
     def __str__(self):
         return self.file_name
 
-def type_name_to_extension(t):
-    return "/**/*." + t
+def get_glob_patterns(root, should_recurse, extensions):
+    is_wildcard_extension = "*" in extensions
+    pattern_start = "/**/*" if should_recurse else "/*"
 
-def get_tag_regex(tag_marker, tags, priority_regex):
-    tag_string = "|".join(tags)
-    regex_string = tag_marker + "(" + tag_string + ")" + r"\(*(" + priority_regex + ")?\)*" 
+    if is_wildcard_extension:
+        return [root + pattern_start]
+    else:
+        return [root + pattern_start + "." + ext for ext in extensions]
+
+def get_tag_regex(tag_marker, tag_string, priority_regex):
+    # -> match tag_marker + tag_string as group
+    # -> match any number of spaces then any number of opening parentheses
+    # -> match priority as group
+    # -> match any number of spaces then any number of opening parentheses
+    regex_string = tag_marker + "(" + tag_string + ")" + r"\s*\(*\s*(" + priority_regex + ")?\s*\)*" 
 
     # Return regex which will match (for example): @HACK|SPEED|TODO(LOW|MEDIUM)
     # with the priority being an optional match
-    return re.compile(regex_string)
+    return re.compile(regex_string, re.IGNORECASE)
 
 def get_priority_regex(priorities):
     return "|".join(priorities)
 
-def find_matches(tag_regex, file_name, priority_value_map, is_case_sensitive):
+def find_matches(tag_regex, file_name, priority_value_map):
     with open(file_name) as f:
-        for number, line in enumerate(f):
-            processed_line = (line if is_case_sensitive else line.upper()).replace(" ", "")
-            truncated_line = printer.get_truncated_text(line.strip(), 100)
-
+        for number, line in enumerate(f, 1):
             # @SPEED(MEDIUM) Regex search of processed line
-            matches = tag_regex.findall(processed_line)
+            matches = tag_regex.findall(line)
 
             for match in matches:
-                tag = match[0]
+                tag = match[0].upper()
                 priority = match[1]
                 priority_idx = priority_value_map.get(priority, default_priority)
+                truncated_line = printer.get_truncated_text(line.strip(), 100)
 
                 yield tag, Match(file_name, number, truncated_line, priority_idx)
 
@@ -148,14 +155,13 @@ def main(args):
     longest_file_name = ""
     longest_line_number = ""
     longest_line = ""
-
-    config = get_config_file()
     root = args.root
     should_recurse = not args.disable_recursive_search
     printer.is_verbose = args.verbose
 
+    config = get_config_file()
+
     # @ROBUSTNESS(MEDIUM) Sanity check values retrieved from config file
-    is_case_sensitive = config["is_case_sensitive"]
     tag_marker = re.escape(config["tag_marker"])
     extensions = config["extensions"]
     priorities = config["priorities"]
@@ -169,34 +175,36 @@ def main(args):
     # special characters and compiling) so that we can avoid recomputing during the actual
     # file parsing phase.
 
-    args_tags = [tag.strip() for tag in args.tags.split(",")] if args.tags is not None else None
+    # @TODO(MEDIUM) Allow runtime choosing of only certain priorities as is done with tags
+    args_tags = [tag for tag in args.tags.split(",")] if args.tags is not None else None
     raw_tags = args_tags if args_tags is not None else config["tags"]
-    tags = [re.escape(tag if is_case_sensitive else tag.upper()) for tag in raw_tags]
+    tags = set([re.escape(tag.strip().upper()) for tag in raw_tags])
     priority_regex = get_priority_regex(priorities)
-    tag_regex = get_tag_regex(tag_marker, tags, priority_regex)
-    glob_pattern = root + ("/**/*." if should_recurse else "**/*.")
+    tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
+    # glob_pattern = root + ("/**/*." if should_recurse else "**/*.")
+    glob_patterns = get_glob_patterns(root, should_recurse, extensions)
+    files = [glob.glob(pattern, recursive=should_recurse) for pattern in glob_patterns][0]
 
-    for files_of_extension in [glob.iglob(glob_pattern + ext, recursive=should_recurse) for ext in extensions]:
-        for file_name in files_of_extension:
-            printer.verbose_log(file_name, "searching for tags")
+    for file_name in files:
+        printer.verbose_log(file_name, "searching for tags")
 
-            try:
-                for tag, match in find_matches(tag_regex, file_name, priority_value_map, is_case_sensitive):
-                    found_matches[tag].append(match)
+        try:
+            for tag, match in find_matches(tag_regex, file_name, priority_value_map):
+                found_matches[tag].append(match)
 
-                    longest_file_name = max([match.file_name, longest_file_name], key=len)
-                    longest_line_number = max([str(match.line_number), longest_line_number], key=len)
-                    longest_line = max([match.line, longest_line], key=len)
+                longest_file_name = max([match.file_name, longest_file_name], key=len)
+                longest_line_number = max([str(match.line_number), longest_line_number], key=len)
+                longest_line = max([match.line, longest_line], key=len)
 
-            except IsADirectoryError:
-                pass
-            except UnicodeDecodeError:
-                pass
+        except IsADirectoryError:
+            pass
+        except UnicodeDecodeError:
+            pass
 
     for tag in found_matches:
         found_matches[tag].sort(key=lambda x: x.priority, reverse=True)
 
-        printer.print_tag_header(tag if is_case_sensitive else tag.upper())
+        printer.print_tag_header(tag.upper())
 
         for match in found_matches[tag]:
             priority_colour = priority_colours[match.priority]
