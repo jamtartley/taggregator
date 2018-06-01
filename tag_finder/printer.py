@@ -16,8 +16,8 @@ def get_truncated_text(text, max_length, truncate_indicator="..."):
     truncate_at = max_length - len(truncate_indicator)
     return (text[:truncate_at] + truncate_indicator) if len(text) > truncate_at else text
 
-def print_right_pad(text, pad_size, is_end=False):
-    end = "\n" if is_end else ""
+def print_right_pad(text, pad_size, append_new_line=False):
+    end = "\n" if append_new_line else ""
     print(text + pad_size * " ", end=end)
 
 def log(text, tag_text, append_new_line=False):

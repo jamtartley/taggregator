@@ -23,6 +23,7 @@ class CommandHandler(object):
         parser = argparse.ArgumentParser(description="Run the tag finder main program")
         parser.add_argument("root", default=os.getcwd(), nargs="?", help="Path from which to start search")
         parser.add_argument("-v", "--verbose", action="store_true", help="Set if program should print verbose output")
+        parser.add_argument("-s", "--simple-mode", action="store_true", help="Set if program should just output found lines without headers")
         parser.add_argument("-t", "--tags", help="Comma-separated list of tags to search for (temporarily overrides config file)")
         parser.add_argument("-d", "--disable-recursive-search", action="store_true", help="Only look in the given root, do not recursively search children")
 

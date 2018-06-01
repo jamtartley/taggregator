@@ -158,6 +158,7 @@ def main(args):
     root = args.root
     should_recurse = not args.disable_recursive_search
     printer.is_verbose = args.verbose
+    is_simple_mode = args.simple_mode
 
     config = get_config_file()
 
@@ -183,7 +184,7 @@ def main(args):
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
     # glob_pattern = root + ("/**/*." if should_recurse else "**/*.")
     glob_patterns = get_glob_patterns(root, should_recurse, extensions)
-    files = [glob.glob(pattern, recursive=should_recurse) for pattern in glob_patterns][0]
+    files = [glob.iglob(pattern, recursive=should_recurse) for pattern in glob_patterns][0]
 
     for file_name in files:
         printer.verbose_log(file_name, "searching for tags")
@@ -201,20 +202,24 @@ def main(args):
         except UnicodeDecodeError:
             pass
 
+    if is_simple_mode:
+        print("\n")
+
     for tag in found_matches:
         found_matches[tag].sort(key=lambda x: x.priority, reverse=True)
 
-        printer.print_tag_header(tag.upper())
+        if not is_simple_mode:
+            printer.print_tag_header(tag.upper())
 
         for match in found_matches[tag]:
             priority_colour = priority_colours[match.priority]
             file_name_padding = len(longest_file_name) - len(match.file_name) + text_padding
             line_number_padding = len(longest_line_number) - len(match.line_number) + text_padding
             line_padding = len(longest_line) - len(match.line) + text_padding
-
+            
             printer.print_right_pad(match.file_name, file_name_padding)
             printer.print_right_pad(":" + match.line_number, line_number_padding)
-            printer.print_right_pad(priority_colour + match.line + printer.TerminalColours.END, line_padding, is_end=True)
+            printer.print_right_pad(priority_colour + match.line + printer.TerminalColours.END, line_padding, append_new_line=True)
 
     print("\n")
 
