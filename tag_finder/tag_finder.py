@@ -160,11 +160,11 @@ def main(args):
     root = args.root
     should_recurse = not args.disable_recursive_search
     printer.is_verbose = args.verbose
-    is_simple_mode = args.simple_mode
+    is_header_mode = args.print_headers
 
     config = get_config_file()
 
-    # @ROBUSTNESS(MEDIUM) Sanity check values retrieved from config file
+    # @ROBUSTNESS(HIGH) Sanity check values retrieved from config file
     tag_marker = re.escape(config["tag_marker"])
     extensions = config["extensions"]
     priorities = config["priorities"]
@@ -199,27 +199,26 @@ def main(args):
         except UnicodeDecodeError:
             pass
 
-    if is_simple_mode:
+    if not is_header_mode:
         print("\n")
 
     # Arrange every match into a dictionary with the key as either
     # the tag of the match or its priority then run through and print to standard output
-    # @USABILITY(LOW) Allow user to switch sort by tag/priority modes
-    is_by_tag = True
+    is_by_priority = config["group_by"] == "priority"
     matches_by_property = defaultdict(list)
-    matches.sort(key=lambda x: x.tag if is_by_tag else x.priority, reverse=True)
+    matches.sort(key=lambda x: x.priority, reverse=True)
     longest_file_name_size = max([len(match.file_name) for match in matches], default=0)
     longest_line_number_size = max([len(str(match.line_number)) for match in matches], default=0)
     longest_line_size = max([len(match.line) for match in matches], default=0)
 
     for match in matches:
-        matches_by_property[match.tag if is_by_tag else match.priority].append(match)
+        matches_by_property[match.priority if is_by_priority else match.tag].append(match)
 
     for key in matches_by_property:
         matches_by_property[key].sort(key=lambda x: x.priority, reverse=True)
 
-        if not is_simple_mode:
-            printer.print_header(key if is_by_tag else value_priority_map.get(key, "NONE"))
+        if is_header_mode:
+            printer.print_header(value_priority_map.get(key, "NONE") if is_by_priority else key)
 
         for match in matches_by_property[key]:
             priority_colour = priority_colours[match.priority]

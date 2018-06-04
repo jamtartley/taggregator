@@ -1,5 +1,6 @@
 {
     "tag_marker": "@",
+    "group_by": "priority",
     "tags": [
         "TODO",
         "HACK",
