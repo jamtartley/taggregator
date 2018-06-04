@@ -158,7 +158,7 @@ def get_config_file():
 def main(args):
     text_padding = 2
     root = args.root
-    should_recurse = not args.disable_recursive_search
+    should_recurse = not args.no_recursion
     printer.is_verbose = args.verbose
     is_header_mode = args.print_headers
 
@@ -180,12 +180,12 @@ def main(args):
     # file parsing phase.
 
     # @TODO(MEDIUM) Allow runtime choosing of only certain priorities as is done with tags
-    args_tags = [tag for tag in args.tags.split(",")] if args.tags is not None else None
-    raw_tags = args_tags if args_tags is not None else config["tags"]
-    tags = set([re.escape(tag.strip().upper()) for tag in raw_tags])
+    tags = set([re.escape(tag.strip().upper()) for tag in config["tags"]])
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
     glob_patterns = get_glob_patterns(root, should_recurse, extensions)
+
+    # @USABILITY(HIGH) Allow discarding of files based on a set of exclude paths in config file
     files = [glob.iglob(pattern, recursive=should_recurse) for pattern in glob_patterns][0]
     matches = []
 
@@ -193,18 +193,20 @@ def main(args):
         printer.verbose_log(file_name, "searching for tags")
 
         try:
-            matches.extend(find_matches(tag_regex, file_name, priority_value_map))
+            for match in find_matches(tag_regex, file_name, priority_value_map):
+                # Determine whether duplicate by checking if an item with the same
+                # file name and line number has already been inserted into the match list
+                if not any(m.file_name == match.file_name and m.line_number == match.line_number for m in matches):
+                    matches.append(match)
         except IsADirectoryError:
             pass
         except UnicodeDecodeError:
             pass
 
-    if not is_header_mode:
+    if not is_header_mode and len(matches) > 0:
         print("\n")
 
-    # Arrange every match into a dictionary with the key as either
-    # the tag of the match or its priority then run through and print to standard output
-    is_by_priority = config["group_by"] == "priority"
+    # Arrange every match into a dictionary with a key the item's priority
     matches_by_property = defaultdict(list)
     matches.sort(key=lambda x: x.priority, reverse=True)
     longest_file_name_size = max([len(match.file_name) for match in matches], default=0)
@@ -212,13 +214,13 @@ def main(args):
     longest_line_size = max([len(match.line) for match in matches], default=0)
 
     for match in matches:
-        matches_by_property[match.priority if is_by_priority else match.tag].append(match)
+        matches_by_property[match.priority].append(match)
 
     for key in matches_by_property:
         matches_by_property[key].sort(key=lambda x: x.priority, reverse=True)
 
         if is_header_mode:
-            printer.print_header(value_priority_map.get(key, "NONE") if is_by_priority else key)
+            printer.print_header(value_priority_map.get(key, "NONE"))
 
         for match in matches_by_property[key]:
             priority_colour = priority_colours[match.priority]
@@ -230,7 +232,7 @@ def main(args):
             printer.print_right_pad(":" + match.line_number, line_number_padding)
             printer.print_right_pad(priority_colour + match.line + printer.TerminalColours.END, line_padding, append_new_line=True)
 
-    print("\n")
+    # print("\n")
 
 default_priority = -1
 config_folder_name = "/.tag_finder/"

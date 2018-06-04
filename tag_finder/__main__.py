@@ -24,8 +24,7 @@ class CommandHandler(object):
         parser.add_argument("root", default=os.getcwd(), nargs="?", help="Path from which to start search")
         parser.add_argument("-v", "--verbose", action="store_true", help="Set if program should print verbose output")
         parser.add_argument("--print-headers", action="store_true", help="Set if program should print section headers")
-        parser.add_argument("-t", "--tags", help="Comma-separated list of tags to search for (temporarily overrides config file)")
-        parser.add_argument("-d", "--disable-recursive-search", action="store_true", help="Only look in the given root, do not recursively search children")
+        parser.add_argument("--no-recursion", action="store_true", help="Only look in the given root, do not recursively search children")
 
         args = parser.parse_args(sys.argv[1:]) if self.was_run_by_default else parser.parse_args(sys.argv[2:])
         tag_finder.main(args)
