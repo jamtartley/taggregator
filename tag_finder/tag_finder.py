@@ -56,7 +56,7 @@ def find_matches(tag_regex, file_name, priority_value_map):
             for match in matches:
                 tag = match[0].upper()
                 priority = match[1]
-                priority_idx = priority_value_map.get(priority, default_priority)
+                priority_idx = priority_value_map.get(priority.upper(), default_priority)
                 truncated_line = printer.get_truncated_text(line.strip(), 100)
 
                 yield tag, Match(file_name, number, truncated_line, priority_idx)
@@ -64,7 +64,7 @@ def find_matches(tag_regex, file_name, priority_value_map):
 def get_priority_value_map(all_priorities):
     # Maps an index of increasing size to each priority ranging from low -> high
     # e.g. given ['LOW', 'MEDIUM', 'HIGH'] will return {'LOW': 0, 'MEDIUM': 1, 'HIGH': 2}
-    return dict((priority_text, priority_index) for priority_index, priority_text in enumerate(all_priorities))
+    return dict((priority_text.upper(), priority_index) for priority_index, priority_text in enumerate(all_priorities))
 
 def get_priority_colours(priority_value_map):
     colour_map = {default_priority: printer.TerminalColours.PRIORITY_NONE}
