@@ -208,9 +208,9 @@ def main(args):
     is_by_tag = True
     matches_by_property = defaultdict(list)
     matches.sort(key=lambda x: x.tag if is_by_tag else x.priority, reverse=True)
-    longest_file_name_size = max(len(match.file_name) for match in matches)
-    longest_line_number_size = max(len(str(match.line_number)) for match in matches)
-    longest_line_size = max(len(match.line) for match in matches)
+    longest_file_name_size = max([len(match.file_name) for match in matches], default=0)
+    longest_line_number_size = max([len(str(match.line_number)) for match in matches], default=0)
+    longest_line_size = max([len(match.line) for match in matches], default=0)
 
     for match in matches:
         matches_by_property[match.tag if is_by_tag else match.priority].append(match)
