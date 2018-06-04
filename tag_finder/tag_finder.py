@@ -35,17 +35,22 @@ def get_glob_patterns(root, should_recurse, extensions):
 
 def get_tag_regex(tag_marker, tag_string, priority_regex):
     # -> match tag_marker + tag_string as group
-    # -> match any number of spaces then any number of opening parentheses
     # -> match priority as group
-    # -> match any number of spaces then any number of opening parentheses
-    regex_string = tag_marker + "(" + tag_string + ")" + r"\s*\(*\s*(" + priority_regex + ")?\s*\)*" 
+    
+    # @BUG(LOW) Slightly weird matching property
+    # Because we have decided that priorities can be optional, we allow zero parentheses around
+    # the priority regex. This has the interesting property that the line below would be marked
+    # as high priority even though the user might not want it to be:
+    # TODO High priority test
+    # Not really sure if this is undesired behaviour or not.
+    regex_string = tag_marker + "(" + tag_string + ")" + r"\s*\(*" + priority_regex + "\)*" 
 
     # Return regex which will match (for example): @HACK|SPEED|TODO(LOW|MEDIUM)
     # with the priority being an optional match
     return re.compile(regex_string, re.IGNORECASE)
 
 def get_priority_regex(priorities):
-    return "|".join(priorities)
+    return "\s*(" + "|".join(priorities) + ")?\s*"
 
 def find_matches(tag_regex, file_name, priority_value_map):
     with open(file_name) as f:

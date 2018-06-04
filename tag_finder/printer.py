@@ -39,4 +39,9 @@ def print_tag_header(tag):
     print(dashes)
 
 is_verbose = False
-terminal_columns = get_terminal_size()[0]
+terminal_columns = 80
+
+try:
+    terminal_columns = get_terminal_size()[0]
+except OSError:
+    pass # Leave at 80
