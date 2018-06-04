@@ -179,18 +179,18 @@ def main(args):
     # special characters and compiling) so that we can avoid recomputing during the actual
     # file parsing phase.
 
-    # @TODO(MEDIUM) Allow runtime choosing of only certain priorities as is done with tags
     tags = set([re.escape(tag.strip().upper()) for tag in config["tags"]])
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
     glob_patterns = get_glob_patterns(root, should_recurse, extensions)
-
-    # @USABILITY(HIGH) Allow discarding of files based on a set of exclude paths in config file
+    exclude = [os.getcwd() + "/" + d for d in config["exclude"]]
     files = [glob.iglob(pattern, recursive=should_recurse) for pattern in glob_patterns][0]
     matches = []
 
     for file_name in files:
-        printer.verbose_log(file_name, "searching for tags")
+        if any(file_name.startswith(e) for e in exclude):
+            printer.verbose_log("Skipped file %s because it matched an exclusion rule" %(file_name), "information")
+            continue
 
         try:
             for match in find_matches(tag_regex, file_name, priority_value_map):
