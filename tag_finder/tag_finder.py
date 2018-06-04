@@ -15,10 +15,11 @@ import statistics
 import sys
 
 class Match:
-    def __init__(self, file_name, line_number, line, priority):
+    def __init__(self, file_name, line_number, line, tag, priority):
         self.file_name = file_name
         self.line_number = str(line_number)
         self.line = line
+        self.tag = tag
         self.priority = priority
 
     def __str__(self):
@@ -36,14 +37,14 @@ def get_glob_patterns(root, should_recurse, extensions):
 def get_tag_regex(tag_marker, tag_string, priority_regex):
     # -> match tag_marker + tag_string as group
     # -> match priority as group
-    
+
     # @BUG(LOW) Slightly weird matching property
     # Because we have decided that priorities can be optional, we allow zero parentheses around
     # the priority regex. This has the interesting property that the line below would be marked
     # as high priority even though the user might not want it to be:
     # TODO High priority test
     # Not really sure if this is undesired behaviour or not.
-    regex_string = tag_marker + "(" + tag_string + ")" + r"\s*\(*" + priority_regex + "\)*" 
+    regex_string = tag_marker + "(" + tag_string + ")" + r"\s*\(*" + priority_regex + "\)*"
 
     # Return regex which will match (for example): @HACK|SPEED|TODO(LOW|MEDIUM)
     # with the priority being an optional match
@@ -64,7 +65,7 @@ def find_matches(tag_regex, file_name, priority_value_map):
                 priority_idx = priority_value_map.get(priority.upper(), default_priority)
                 truncated_line = printer.get_truncated_text(line.strip(), 100)
 
-                yield tag, Match(file_name, number, truncated_line, priority_idx)
+                yield Match(file_name, number, truncated_line, tag, priority_idx)
 
 def get_priority_value_map(all_priorities):
     # Maps an index of increasing size to each priority ranging from low -> high
@@ -144,7 +145,7 @@ def get_config_file():
     # @ROBUSTNESS(MEDIUM) Detect malformed config file
     # Currently we just exit when we detect that the JSON file is not strictly correct JSON.
     #
-    # @USABILITY(MEDIUM) We should be further analysing the file we found and maybe giving the user 
+    # @USABILITY(MEDIUM) We should be further analysing the file we found and maybe giving the user
     # the option to fix it themselves or overwrite with the default config file
     try:
         with open(config_path) as config_json:
@@ -155,11 +156,7 @@ def get_config_file():
         raise SystemExit()
 
 def main(args):
-    found_matches = defaultdict(list)
     text_padding = 2
-    longest_file_name = ""
-    longest_line_number = ""
-    longest_line = ""
     root = args.root
     should_recurse = not args.disable_recursive_search
     printer.is_verbose = args.verbose
@@ -172,6 +169,7 @@ def main(args):
     extensions = config["extensions"]
     priorities = config["priorities"]
     priority_value_map = get_priority_value_map(priorities)
+    value_priority_map = dict(reversed(item) for item in priority_value_map.items())
     priority_colours = get_priority_colours(priority_value_map)
 
     # Allow temporary overriding of tags from command line, check if command line flag
@@ -187,21 +185,15 @@ def main(args):
     tags = set([re.escape(tag.strip().upper()) for tag in raw_tags])
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
-    # glob_pattern = root + ("/**/*." if should_recurse else "**/*.")
     glob_patterns = get_glob_patterns(root, should_recurse, extensions)
     files = [glob.iglob(pattern, recursive=should_recurse) for pattern in glob_patterns][0]
+    matches = []
 
     for file_name in files:
         printer.verbose_log(file_name, "searching for tags")
 
         try:
-            for tag, match in find_matches(tag_regex, file_name, priority_value_map):
-                found_matches[tag].append(match)
-
-                longest_file_name = max([match.file_name, longest_file_name], key=len)
-                longest_line_number = max([str(match.line_number), longest_line_number], key=len)
-                longest_line = max([match.line, longest_line], key=len)
-
+            matches.extend(find_matches(tag_regex, file_name, priority_value_map))
         except IsADirectoryError:
             pass
         except UnicodeDecodeError:
@@ -210,18 +202,31 @@ def main(args):
     if is_simple_mode:
         print("\n")
 
-    for tag in found_matches:
-        found_matches[tag].sort(key=lambda x: x.priority, reverse=True)
+    # Arrange every match into a dictionary with the key as either
+    # the tag of the match or its priority then run through and print to standard output
+    # @USABILITY(LOW) Allow user to switch sort by tag/priority modes
+    is_by_tag = True
+    matches_by_property = defaultdict(list)
+    matches.sort(key=lambda x: x.tag if is_by_tag else x.priority, reverse=True)
+    longest_file_name_size = max(len(match.file_name) for match in matches)
+    longest_line_number_size = max(len(str(match.line_number)) for match in matches)
+    longest_line_size = max(len(match.line) for match in matches)
+
+    for match in matches:
+        matches_by_property[match.tag if is_by_tag else match.priority].append(match)
+
+    for key in matches_by_property:
+        matches_by_property[key].sort(key=lambda x: x.priority, reverse=True)
 
         if not is_simple_mode:
-            printer.print_tag_header(tag.upper())
+            printer.print_header(key if is_by_tag else value_priority_map.get(key, "NONE"))
 
-        for match in found_matches[tag]:
+        for match in matches_by_property[key]:
             priority_colour = priority_colours[match.priority]
-            file_name_padding = len(longest_file_name) - len(match.file_name) + text_padding
-            line_number_padding = len(longest_line_number) - len(match.line_number) + text_padding
-            line_padding = len(longest_line) - len(match.line) + text_padding
-            
+            file_name_padding = longest_file_name_size - len(match.file_name) + text_padding
+            line_number_padding = longest_line_number_size - len(match.line_number) + text_padding
+            line_padding = longest_line_size - len(match.line) + text_padding
+
             printer.print_right_pad(match.file_name, file_name_padding)
             printer.print_right_pad(":" + match.line_number, line_number_padding)
             printer.print_right_pad(priority_colour + match.line + printer.TerminalColours.END, line_padding, append_new_line=True)
