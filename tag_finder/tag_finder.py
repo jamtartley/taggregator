@@ -1,9 +1,8 @@
 #! /usr/bin/env python3
 #! -*- coding: utf-8 -*-
 
-from . import printer
+from tag_finder import printer
 from collections import defaultdict
-from definitions import get_project_root
 from json.decoder import JSONDecodeError
 from pathlib import Path
 import glob
@@ -25,6 +24,9 @@ class Match:
 
     def __str__(self):
         return self.file_name
+
+def get_project_root():
+    return os.path.dirname(os.path.abspath(__file__))
 
 def get_glob_patterns(root, should_recurse, extensions):
     is_wildcard_extension = "*" in extensions
