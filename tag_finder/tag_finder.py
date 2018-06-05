@@ -142,11 +142,6 @@ def get_config_file():
         printer.log("No config file found!", "warning")
         config_path = create_default_config_file(home_config_dir_path)
 
-    # @ROBUSTNESS(MEDIUM) Detect malformed config file
-    # Currently we just exit when we detect that the JSON file is not strictly correct JSON.
-    #
-    # @USABILITY(MEDIUM) We should be further analysing the file we found and maybe giving the user
-    # the option to fix it themselves or overwrite with the default config file
     try:
         with open(config_path) as config_json:
             return json.load(config_json)
@@ -154,6 +149,15 @@ def get_config_file():
         error_string = "Error in your tag_finder config file at line %d, column %d, exiting..." %(je.lineno, je.colno)
         printer.log(error_string, "fatal error")
         raise SystemExit()
+
+def set_config_property(config, key, value):
+    config[key] = value
+    config_path = get_existing_config_path()
+
+    printer.log("Found unset config property: '%s', setting it to '%s'" %(key, value), "warning")
+
+    with open(config_path, "w") as config_file:
+        json.dump(config, config_file, indent=4)
 
 def main(args):
     text_padding = 2
@@ -163,8 +167,12 @@ def main(args):
     is_header_mode = args.print_headers
 
     config = get_config_file()
+    default_config = get_default_config_json()
+    
+    for key in default_config:
+        if key not in config:
+            set_config_property(config, key, default_config[key])
 
-    # @ROBUSTNESS(HIGH) Sanity check values retrieved from config file
     tag_marker = re.escape(config["tag_marker"])
     extensions = config["extensions"]
     priorities = config["priorities"]
