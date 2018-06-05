@@ -162,7 +162,7 @@ def set_config_property(config, key, value):
 
 def main(args):
     text_padding = 2
-    root = args.root
+    root = get_project_root() + "/" + args.root
     should_recurse = not args.no_recursion
     printer.is_verbose = args.verbose
     is_header_mode = args.print_headers
