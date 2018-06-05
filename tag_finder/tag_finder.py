@@ -3,6 +3,7 @@
 
 from . import printer
 from collections import defaultdict
+from definitions import get_project_root
 from json.decoder import JSONDecodeError
 from pathlib import Path
 import glob
@@ -88,7 +89,7 @@ def get_priority_colours(priority_value_map):
 
 def get_existing_config_path():
     # Look for existing config in first {current dir}/.tag_finder and then .tag_finder
-    current_dir_config_file_path = os.getcwd() + config_folder_name + config_file_name
+    current_dir_config_file_path = get_project_root() + config_folder_name + config_file_name
 
     if os.path.isfile(current_dir_config_file_path):
         return current_dir_config_file_path
@@ -168,7 +169,7 @@ def main(args):
 
     config = get_config_file()
     default_config = get_default_config_json()
-    
+
     for key in default_config:
         if key not in config:
             set_config_property(config, key, default_config[key])
@@ -191,7 +192,7 @@ def main(args):
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
     glob_patterns = get_glob_patterns(root, should_recurse, extensions)
-    exclude = [os.getcwd() + "/" + d for d in config["exclude"]]
+    exclude = [get_project_root() + "/" + d for d in config["exclude"]]
     files = [glob.iglob(pattern, recursive=should_recurse) for pattern in glob_patterns][0]
     matches = []
 
@@ -240,12 +241,13 @@ def main(args):
             printer.print_right_pad(":" + match.line_number, line_number_padding)
             printer.print_right_pad(priority_colour + match.line + printer.TerminalColours.END, line_padding, append_new_line=True)
 
-    # print("\n")
+    if (len(matches) > 0):
+        print("\n")
 
 default_priority = -1
 config_folder_name = "/.tag_finder/"
 config_file_name = "config.json"
-current_dir_config_dir_path = os.getcwd() + config_folder_name
-current_dir_config_file_path = os.getcwd() + config_folder_name + config_file_name
+current_dir_config_dir_path = get_project_root() + config_folder_name
+current_dir_config_file_path = current_dir_config_dir_path + config_file_name
 home_config_dir_path = str(Path.home()) + config_folder_name
 home_config_file_path = home_config_dir_path + config_file_name
