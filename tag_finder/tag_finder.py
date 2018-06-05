@@ -188,6 +188,9 @@ def main(args):
     # special characters and compiling) so that we can avoid recomputing during the actual
     # file parsing phase.
 
+    # @BUG(MEDIUM) Incorrect finding of files when running from outside project directory.
+    # There are some issues with assigning the root from the command line if it is done
+    # from higher up in the hierarchy than the project root folder
     tags = set([re.escape(tag.strip().upper()) for tag in config["tags"]])
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
