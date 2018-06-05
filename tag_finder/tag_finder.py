@@ -25,12 +25,9 @@ class Match:
     def __str__(self):
         return self.file_name
 
-def get_project_root():
-    return os.path.dirname(os.path.abspath(__file__))
-
 def get_glob_patterns(root, should_recurse, extensions):
     is_wildcard_extension = "*" in extensions
-    pattern_start = "/**/*" if should_recurse else "/*"
+    pattern_start = "**/*" if should_recurse else "*"
 
     if is_wildcard_extension:
         return [root + pattern_start]
@@ -91,8 +88,6 @@ def get_priority_colours(priority_value_map):
 
 def get_existing_config_path():
     # Look for existing config in first {current dir}/.tag_finder and then .tag_finder
-    current_dir_config_file_path = get_project_root() + config_folder_name + config_file_name
-
     if os.path.isfile(current_dir_config_file_path):
         return current_dir_config_file_path
     else:
@@ -164,7 +159,9 @@ def set_config_property(config, key, value):
 
 def main(args):
     text_padding = 2
-    root = get_project_root() + "/" + args.root
+    root = os.getcwd() + "/" + args.root
+    if not root.endswith("/"):
+        root += "/"
     should_recurse = not args.no_recursion
     printer.is_verbose = args.verbose
     is_header_mode = args.print_headers
@@ -197,7 +194,8 @@ def main(args):
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
     glob_patterns = get_glob_patterns(root, should_recurse, extensions)
-    exclude = [get_project_root() + "/" + d for d in config["exclude"]]
+    exclude = [os.getcwd() + "/" + d for d in config["exclude"]]
+
     files = [glob.iglob(pattern, recursive=should_recurse) for pattern in glob_patterns][0]
     matches = []
 
@@ -252,7 +250,7 @@ def main(args):
 default_priority = -1
 config_folder_name = "/.tag_finder/"
 config_file_name = "config.json"
-current_dir_config_dir_path = get_project_root() + config_folder_name
+current_dir_config_dir_path = os.getcwd() + config_folder_name
 current_dir_config_file_path = current_dir_config_dir_path + config_file_name
 home_config_dir_path = str(Path.home()) + config_folder_name
 home_config_file_path = home_config_dir_path + config_file_name
