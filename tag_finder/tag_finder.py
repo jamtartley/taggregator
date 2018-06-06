@@ -159,6 +159,8 @@ def set_config_property(config, key, value):
 
 def main(args):
     text_padding = 2
+    # @BUG(MEDIUM) Fully support different types of path being supplied as root
+    # This still doesn't work for cases where the user passes some roots like ".."
     root = os.getcwd() + "/" + args.root
     if not root.endswith("/"):
         root += "/"
@@ -190,7 +192,9 @@ def main(args):
     # @BUG(MEDIUM) Incorrect finding of files when running from outside project directory.
     # There are some issues with assigning the root from the command line if it is done
     # from higher up in the hierarchy than the project root folder
-    tags = set([re.escape(tag.strip().upper()) for tag in config["tags"]])
+    args_tags = [tag for tag in args.tags.split(",")] if args.tags is not None else None
+    raw_tags = args_tags if args_tags is not None else config["tags"]
+    tags = set([re.escape(tag.strip().upper()) for tag in raw_tags])
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
     glob_patterns = get_glob_patterns(root, should_recurse, extensions)
