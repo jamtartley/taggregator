@@ -24,6 +24,8 @@
         "dist/",
         "tag_finder/example_files/",
         "tests/",
-        "venv/"
+        "venv/",
+        "README.md",
+        "tag_finder.egg-info/"
     ]
 }

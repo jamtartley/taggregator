@@ -42,7 +42,7 @@ def get_tag_regex(tag_marker, tag_string, priority_regex):
     # Because we have decided that priorities can be optional, we allow zero parentheses around
     # the priority regex. This has the interesting property that the line below would be marked
     # as high priority even though the user might not want it to be:
-    # TODO High priority test
+    # @IGNORE @TODO High priority test
     # Not really sure if this is undesired behaviour or not.
     regex_string = tag_marker + "(" + tag_string + ")" + r"\s*\(*" + priority_regex + "\)*"
 
@@ -53,6 +53,7 @@ def get_tag_regex(tag_marker, tag_string, priority_regex):
 def get_priority_regex(priorities):
     return "\s*(" + "|".join(priorities) + ")?\s*"
 
+# @SPEED(MEDIUM) find_matches() - multithreading?
 def find_matches(tag_regex, file_name, priority_value_map, ignore):
     # @BUG(HIGH) Throws OSError on some files if in use
     # Can't repro on *nix but happens on Cygwin if the file is in use
