@@ -163,7 +163,6 @@ def set_config_property(config, key, value):
         json.dump(config, config_file, indent=4)
 
 def main(args):
-    text_padding = 2
     # @BUG(MEDIUM) Fully support different types of path being supplied as root
     # This still doesn't work for cases where the user passes some roots like ".."
     root = os.getcwd() + "/" + args.root
@@ -238,6 +237,7 @@ def main(args):
     longest_file_name_size = max([len(match.file_name) for match in matches], default=0)
     longest_line_number_size = max([len(str(match.line_number)) for match in matches], default=0)
     longest_line_size = max([len(match.line) for match in matches], default=0)
+    text_padding = 2
 
     for match in matches:
         matches_by_property[match.priority].append(match)
@@ -246,7 +246,7 @@ def main(args):
         matches_by_property[key].sort(key=lambda x: x.priority, reverse=True)
 
         if is_header_mode:
-            printer.print_header(value_priority_map.get(key, "NONE"))
+            printer.print_header(value_priority_map.get(key, "NONE"), priority_colours[key])
 
         for match in matches_by_property[key]:
             priority_colour = priority_colours[match.priority]

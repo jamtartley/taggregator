@@ -30,12 +30,12 @@ def verbose_log(text, tag_text, append_new_line=False):
 
     log(text, tag_text, append_new_line)
 
-def print_header(text):
+def print_header(text, colour):
     dash_count = int(terminal_columns / 2)
     dashes = "-" * dash_count
     print("\n")
     print(dashes)
-    print(TerminalColours.HEADER + str(text) + TerminalColours.END)
+    print(colour + str(text) + TerminalColours.END)
     print(dashes)
 
 is_verbose = False
