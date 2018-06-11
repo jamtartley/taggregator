@@ -20,5 +20,10 @@
     ],
     "ignore": "IGNORE",
     "exclude": [
+        "build/",
+        "dist/",
+        "tag_finder/example_files/",
+        "tests/",
+        "venv/"
     ]
 }

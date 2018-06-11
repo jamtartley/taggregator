@@ -46,16 +46,21 @@ def get_tag_regex(tag_marker, tag_string, priority_regex):
     # Not really sure if this is undesired behaviour or not.
     regex_string = tag_marker + "(" + tag_string + ")" + r"\s*\(*" + priority_regex + "\)*"
 
-    # Return regex which will match (for example): @HACK|SPEED|TODO(LOW|MEDIUM)
+    # @IGNORE Return regex which will match (for example): @HACK|SPEED|TODO(LOW|MEDIUM)
     # with the priority being an optional match
     return re.compile(regex_string, re.IGNORECASE)
 
 def get_priority_regex(priorities):
     return "\s*(" + "|".join(priorities) + ")?\s*"
 
-def find_matches(tag_regex, file_name, priority_value_map):
+def find_matches(tag_regex, file_name, priority_value_map, ignore):
+    # @BUG(HIGH) Throws OSError on some files if in use
+    # Can't repro on *nix but happens on Cygwin if the file is in use
     with open(file_name) as f:
         for number, line in enumerate(f, 1):
+            if ignore in line:
+                continue
+
             # @SPEED(MEDIUM) Regex search of processed line
             matches = tag_regex.findall(line)
 
@@ -178,6 +183,7 @@ def main(args):
     tag_marker = re.escape(config["tag_marker"])
     extensions = config["extensions"]
     priorities = config["priorities"]
+    ignore = config["ignore"]
     priority_value_map = get_priority_value_map(priorities)
     value_priority_map = dict(reversed(item) for item in priority_value_map.items())
     priority_colours = get_priority_colours(priority_value_map)
@@ -198,6 +204,9 @@ def main(args):
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
     glob_patterns = get_glob_patterns(root, should_recurse, extensions)
+
+    # @TODO(MEDIUM) Allow exclusion paths to be specified in a file
+    # The user might want to exclude everything in .gitignore for example
     exclude = [os.getcwd() + "/" + d for d in config["exclude"]]
 
     files = [glob.iglob(pattern, recursive=should_recurse) for pattern in glob_patterns][0]
@@ -209,7 +218,7 @@ def main(args):
             continue
 
         try:
-            for match in find_matches(tag_regex, file_name, priority_value_map):
+            for match in find_matches(tag_regex, file_name, priority_value_map, ignore):
                 # Determine whether duplicate by checking if an item with the same
                 # file name and line number has already been inserted into the match list
                 if not any(m.file_name == match.file_name and m.line_number == match.line_number for m in matches):
