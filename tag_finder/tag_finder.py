@@ -209,7 +209,8 @@ def main(args):
     # The user might want to exclude everything in .gitignore for example
     exclude = [os.getcwd() + "/" + d for d in config["exclude"]]
 
-    files = [glob.iglob(pattern, recursive=should_recurse) for pattern in glob_patterns][0]
+    file_sets = [glob.glob(pattern, recursive=should_recurse) for pattern in glob_patterns]
+    files = [f for sublist in file_sets for f in sublist]
     matches = []
 
     for file_name in files:
