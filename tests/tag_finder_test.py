@@ -1,4 +1,3 @@
-import logging
 import pytest
 from tag_finder import tag_finder as tag_f
 

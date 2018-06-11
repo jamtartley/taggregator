@@ -13,8 +13,11 @@ class TerminalColours():
     PRIORITY_HIGH = '\033[0;31m'
 
 def get_truncated_text(text, max_length, truncate_indicator="..."):
-    truncate_at = max_length - len(truncate_indicator)
-    return (text[:truncate_at] + truncate_indicator) if len(text) > truncate_at else text
+    """
+    Truncate text at given length and append truncate_indicator if truncated.
+    If the text is shorter than or equal to max_length, just return text unmodified
+    """
+    return (text[:max_length] + truncate_indicator) if len(text) > max_length else text
 
 def print_right_pad(text, pad_size, append_new_line=False):
     end = "\n" if append_new_line else ""

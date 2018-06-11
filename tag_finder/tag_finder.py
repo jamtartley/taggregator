@@ -35,8 +35,11 @@ def get_glob_patterns(root, should_recurse, extensions):
         return [root + pattern_start + "." + ext for ext in extensions]
 
 def get_tag_regex(tag_marker, tag_string, priority_regex):
-    # -> match tag_marker + tag_string as group
-    # -> match priority as group
+    """
+    Get compiled regex for matching tags by:
+        -> match tag_marker + tag_string as group
+        -> match priority as group
+    """
 
     # @BUG(LOW) Slightly weird matching property
     # Because we have decided that priorities can be optional, we allow zero parentheses around
@@ -74,8 +77,10 @@ def find_matches(tag_regex, file_name, priority_value_map, ignore):
                 yield Match(file_name, number, truncated_line, tag, priority_idx)
 
 def get_priority_value_map(all_priorities):
-    # Maps an index of increasing size to each priority ranging from low -> high
-    # e.g. given ['LOW', 'MEDIUM', 'HIGH'] will return {'LOW': 0, 'MEDIUM': 1, 'HIGH': 2}
+    """
+    Maps an index of increasing size to each priority ranging from low -> high
+    e.g. given ['LOW', 'MEDIUM', 'HIGH'] will return {'LOW': 0, 'MEDIUM': 1, 'HIGH': 2}
+    """
     return dict((priority_text.upper(), priority_index) for priority_index, priority_text in enumerate(all_priorities))
 
 def get_priority_colours(priority_value_map):
@@ -93,7 +98,9 @@ def get_priority_colours(priority_value_map):
     return colour_map
 
 def get_existing_config_path():
-    # Look for existing config in first {current dir}/.tag_finder and then .tag_finder
+    """
+    Look for existing config in first {current dir}/.tag_finder and then .tag_finder
+    """
     if os.path.isfile(current_dir_config_file_path):
         return current_dir_config_file_path
     else:
@@ -136,6 +143,10 @@ def get_default_config_json():
         return json.loads(default_config_file.read())
 
 def get_config_file():
+    """
+    Return the content of a config.json if one is found.
+    If not, one is created.
+    """
     # If neither ~/.tag_finder or {current dir}/.tag_finder exists,
     # create ~/.tag_finder and copy in the default config file from bundle resources
     config_path = get_existing_config_path()
