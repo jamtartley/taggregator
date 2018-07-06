@@ -65,6 +65,8 @@ def find_matches(tag_regex, file_name, priority_value_map, ignore):
         if not tag_regex.findall(f.read()):
             return
 
+        f.seek(0)
+
         # @BUG(HIGH) Throws OSError on some files if in use
         # Can't repro on *nix but happens on Cygwin if the file is in use
         for number, line in enumerate(f, 1):
