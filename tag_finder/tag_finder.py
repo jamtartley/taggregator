@@ -58,9 +58,15 @@ def get_priority_regex(priorities):
 
 # @SPEED(MEDIUM) find_matches() - multithreading?
 def find_matches(tag_regex, file_name, priority_value_map, ignore):
-    # @BUG(HIGH) Throws OSError on some files if in use
-    # Can't repro on *nix but happens on Cygwin if the file is in use
     with open(file_name) as f:
+        # Read whole file into one buffer and see if the regex matches
+        # against it so we dont need to do the expensive findall on every
+        # line individually unless we find a whole match
+        if not tag_regex.findall(f.read()):
+            return
+
+        # @BUG(HIGH) Throws OSError on some files if in use
+        # Can't repro on *nix but happens on Cygwin if the file is in use
         for number, line in enumerate(f, 1):
             if ignore in line:
                 continue
