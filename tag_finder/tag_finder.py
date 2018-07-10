@@ -57,19 +57,19 @@ def get_priority_regex(priorities):
     return "\s*(" + "|".join(priorities) + ")?\s*"
 
 # @SPEED(MEDIUM) find_matches() - multithreading?
-def find_matches(tag_regex, file_name, priority_value_map, ignore):
+def find_matches(tag_regex, file_name, priorities, priority_value_map, ignore):
     with open(file_name) as f:
-        # Read whole file into one buffer and see if the regex matches
-        # against it so we dont need to do the expensive findall on every
-        # line individually unless we find a whole match
-        if not tag_regex.findall(f.read()):
-            return
+        # Read whole file into one buffer and see if any of the priorities
+        # match against it so we dont need to do the expensive regex
+        # findall on every line individually unless we find a whole match
+        file_contents = f.read()
 
-        f.seek(0)
+        if not any(p in file_contents for p in priorities):
+            return
 
         # @BUG(HIGH) Throws OSError on some files if in use
         # Can't repro on *nix but happens on Cygwin if the file is in use
-        for number, line in enumerate(f, 1):
+        for number, line in enumerate(file_contents.split('\n'), 1):
             if ignore in line:
                 continue
 
@@ -238,7 +238,7 @@ def main(args):
             continue
 
         try:
-            for match in find_matches(tag_regex, file_name, priority_value_map, ignore):
+            for match in find_matches(tag_regex, file_name, priorities, priority_value_map, ignore):
                 # Determine whether duplicate by checking if an item with the same
                 # file name and line number has already been inserted into the match list
                 if not any(m.file_name == match.file_name and m.line_number == match.line_number for m in matches):
