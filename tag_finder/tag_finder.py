@@ -56,13 +56,24 @@ def get_tag_regex(tag_marker, tag_string, priority_regex):
 def get_priority_regex(priorities):
     return "\s*(" + "|".join(priorities) + ")?\s*"
 
-# @SPEED(MEDIUM) find_matches() - multithreading?
 def find_matches(tag_regex, file_name, priorities, priority_value_map, ignore):
+    if os.path.isdir(file_name):
+        return
+
+    # @SPEED(HIGH) File opening/reading
+    # Profiling shows that this is the greatest bottleneck in the app
+    # at the minute, experiments with multiprocessing only slowed it down
+    # because it is IO bound work
     with open(file_name) as f:
         # Read whole file into one buffer and see if any of the priorities
         # match against it so we dont need to do the expensive regex
         # findall on every line individually unless we find a whole match
-        file_contents = f.read()
+
+        try:
+            file_contents = f.read()
+        except UnicodeDecodeError:
+            # Ignore non utf-8 files
+            return
 
         if not any(p in file_contents for p in priorities):
             return
@@ -237,16 +248,11 @@ def main(args):
             printer.verbose_log("Skipped file %s because it matched an exclusion rule" %(file_name), "information")
             continue
 
-        try:
-            for match in find_matches(tag_regex, file_name, priorities, priority_value_map, ignore):
-                # Determine whether duplicate by checking if an item with the same
-                # file name and line number has already been inserted into the match list
-                if not any(m.file_name == match.file_name and m.line_number == match.line_number for m in matches):
-                    matches.append(match)
-        except IsADirectoryError:
-            pass
-        except UnicodeDecodeError:
-            pass
+        for match in find_matches(tag_regex, file_name, priorities, priority_value_map, ignore):
+            # Determine whether duplicate by checking if an item with the same
+            # file name and line number has already been inserted into the match list
+            if not any(m.file_name == match.file_name and m.line_number == match.line_number for m in matches):
+                matches.append(match)
 
     if not is_header_mode and len(matches) > 0:
         print("\n")
