@@ -45,11 +45,11 @@ def get_tag_regex(tag_marker, tag_string, priority_regex):
     # Because we have decided that priorities can be optional, we allow zero parentheses around
     # the priority regex. This has the interesting property that the line below would be marked
     # as high priority even though the user might not want it to be:
-    # @IGNORE @TODO High priority test
+    # @IGNORE @FEATURE High priority test
     # Not really sure if this is undesired behaviour or not.
     regex_string = tag_marker + "(" + tag_string + ")" + r"\s*\(*" + priority_regex + "\)*"
 
-    # @IGNORE Return regex which will match (for example): @HACK|SPEED|TODO(LOW|MEDIUM)
+    # @IGNORE Return regex which will match (for example): @HACK|SPEED|FEATURE(LOW|MEDIUM)
     # with the priority being an optional match
     return re.compile(regex_string, re.IGNORECASE)
 
@@ -235,7 +235,7 @@ def main(args):
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
     glob_patterns = get_glob_patterns(root, should_recurse, extensions)
 
-    # @TODO(MEDIUM) Allow exclusion paths to be specified in a file
+    # @FEATURE(MEDIUM) Allow exclusion paths to be specified in a file
     # The user might want to exclude everything in .gitignore for example
     exclude = [os.getcwd() + "/" + d for d in config["exclude"]]
 
