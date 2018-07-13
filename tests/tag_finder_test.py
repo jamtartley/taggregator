@@ -1,17 +1,17 @@
 import pytest
-from tag_finder import tag_finder as tag_f
+from taggregator import taggregator as tagg
 
 def pipe_join(items):
     return "|".join(items)
 
 def get_compiled_regex(tags, priorities):
-    priority_regex = tag_f.get_priority_regex(priorities)
+    priority_regex = tagg.get_priority_regex(priorities)
     tags_piped = pipe_join(tags)
-    return tag_f.get_tag_regex("@", tags_piped, priority_regex)
+    return tagg.get_tag_regex("@", tags_piped, priority_regex)
 
 def test_get_priority_regex():
     priorities = ["HIGH", "LOW"]
-    assert(tag_f.get_priority_regex(priorities) == "\s*(HIGH|LOW)?\s*")
+    assert(tagg.get_priority_regex(priorities) == "\s*(HIGH|LOW)?\s*")
 
 def test_match_all_upper_no_spaces():
     line = "@TODO(HIGH) test"

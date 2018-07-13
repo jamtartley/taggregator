@@ -7,20 +7,20 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="tag_finder",
-    version="0.0.33",
+    name="taggregator",
+    version="0.0.34",
     author="Sam Hartley",
     author_email="sam@deadcentaur.com",
     description="Find lines of source code you have tagged with custom categories",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/jamtartley/tag_finder",
+    url="https://github.com/jamtartley/taggregator",
     python_requires=">=3",
     include_package_data=True,
     packages=setuptools.find_packages(),
     entry_points={
         "console_scripts": [
-            "tagf = tag_finder.__main__:main"
+            "tagg = taggregator.__main__:main"
         ]
     },
     classifiers=(

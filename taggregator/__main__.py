@@ -2,7 +2,7 @@
 #! -*- coding: utf-8 -*-
 
 from . import printer
-from . import tag_finder
+from . import taggregator
 from pathlib import Path
 import argparse
 import os
@@ -28,11 +28,11 @@ class CommandHandler(object):
         parser.add_argument("--no-recursion", action="store_true", help="Only look in the given root, do not recursively search children")
 
         args = parser.parse_args(sys.argv[1:]) if self.was_run_by_default else parser.parse_args(sys.argv[2:])
-        tag_finder.main(args)
+        taggregator.main(args)
 
     def create(self):
         # @TODO(LOW) Allow user to specify path for config file
-        tag_finder.create_default_config_file_current_dir()
+        taggregator.create_default_config_file_current_dir()
 
 def main():
     CommandHandler()

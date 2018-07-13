@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 #! -*- coding: utf-8 -*-
 
-from tag_finder import printer
+from taggregator import printer
 from collections import defaultdict
 from json.decoder import JSONDecodeError
 from pathlib import Path
@@ -118,7 +118,7 @@ def get_priority_colours(priority_value_map):
 
 def get_existing_config_path():
     """
-    Look for existing config in first {current dir}/.tag_finder and then .tag_finder
+    Look for existing config in first {current dir}/.taggregator and then .taggregator
     """
     if os.path.isfile(current_dir_config_file_path):
         return current_dir_config_file_path
@@ -166,8 +166,8 @@ def get_config_file():
     Return the content of a config.json if one is found.
     If not, one is created.
     """
-    # If neither ~/.tag_finder or {current dir}/.tag_finder exists,
-    # create ~/.tag_finder and copy in the default config file from bundle resources
+    # If neither ~/.taggregator or {current dir}/.taggregator exists,
+    # create ~/.taggregator and copy in the default config file from bundle resources
     config_path = get_existing_config_path()
 
     if config_path:
@@ -180,7 +180,7 @@ def get_config_file():
         with open(config_path) as config_json:
             return json.load(config_json)
     except JSONDecodeError as je:
-        error_string = "Error in your tag_finder config file at line %d, column %d, exiting..." %(je.lineno, je.colno)
+        error_string = "Error in your taggregator config file at line %d, column %d, exiting..." %(je.lineno, je.colno)
         printer.log(error_string, "fatal error")
         raise SystemExit()
 
@@ -235,8 +235,6 @@ def main(args):
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
     glob_patterns = get_glob_patterns(root, should_recurse, extensions)
 
-    # @FEATURE(MEDIUM) Allow exclusion paths to be specified in a file
-    # The user might want to exclude everything in .gitignore for example
     exclude = [os.getcwd() + "/" + d for d in config["exclude"]]
 
     file_sets = [glob.glob(pattern, recursive=should_recurse) for pattern in glob_patterns]
@@ -288,7 +286,7 @@ def main(args):
         print("\n")
 
 default_priority = -1
-config_folder_name = "/.tag_finder/"
+config_folder_name = "/.taggregator/"
 config_file_name = "config.json"
 current_dir_config_dir_path = os.getcwd() + config_folder_name
 current_dir_config_file_path = current_dir_config_dir_path + config_file_name

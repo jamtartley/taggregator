@@ -22,10 +22,10 @@
     "exclude": [
         "build/",
         "dist/",
-        "tag_finder/example_files/",
+        "taggregator/example_files/",
         "tests/",
         "venv/",
         "README.md",
-        "tag_finder.egg-info/"
+        "taggregator.egg-info/"
     ]
 }

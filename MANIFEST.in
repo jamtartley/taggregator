@@ -1,1 +1,1 @@
-include tag_finder/default_config.json
+include taggregator/default_config.json

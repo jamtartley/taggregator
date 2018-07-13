@@ -1,5 +1,5 @@
 import pytest
-from tag_finder import printer as printer
+from taggregator import printer as printer
 
 def test_get_truncated_text():
     text = "Lorem ipsum dolor sit amet"

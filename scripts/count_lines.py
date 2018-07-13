@@ -5,7 +5,7 @@ def count_lines_in_file(file_name):
     with open(file_name) as f:
         return sum(1 for line in f)
 
-dir_map = {"CODE": "tag_finder/*.py", "SCRIPTS": "scripts/*", "TESTS": "tests/*.py"}
+dir_map = {"CODE": "taggregator/*.py", "SCRIPTS": "scripts/*", "TESTS": "tests/*.py"}
 total_line_count = 0
 dash_count = 40
 
