@@ -20,7 +20,7 @@ class CommandHandler(object):
         getattr(self, command)()
 
     def run(self):
-        parser = argparse.ArgumentParser(description="Run the tag finder main program")
+        parser = argparse.ArgumentParser(description="Run the taggregator main program")
         parser.add_argument("root", default="", nargs="?", help="Path from which to start search")
         parser.add_argument("-t", "--tags", help="Comma-separated list of tags to search for (temporarily overrides config file)")
         parser.add_argument("-v", "--verbose", action="store_true", help="Set if program should print verbose output")
