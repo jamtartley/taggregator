@@ -49,4 +49,9 @@ $ tagg -t "speed, refactor"
 $ tagg create
 ```
 
-## 
+## Workflow integration
+It might be useful to bind taggregator to a key combination in a tool like vim. For example, place this in your ~/.vimrc:
+```
+nnoremap <leader>t :!clear;tagg<CR>
+```
+Presuming your vim leader is ',' you can then access your taggregator todo list at any time by typing ',t' while editing.
