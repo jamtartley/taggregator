@@ -56,7 +56,7 @@ def get_tag_regex(tag_marker, tag_string, priority_regex):
 def get_priority_regex(priorities):
     return "\s*(" + "|".join(priorities) + ")?\s*"
 
-def find_matches(tag_regex, file_name, priorities, priority_value_map, ignore):
+def find_matches(tag_regex, tags, file_name, priority_value_map, ignore):
     if os.path.isdir(file_name):
         return
 
@@ -65,7 +65,7 @@ def find_matches(tag_regex, file_name, priorities, priority_value_map, ignore):
     # at the minute, experiments with multiprocessing only slowed it down
     # because it is IO bound work
     with open(file_name) as f:
-        # Read whole file into one buffer and see if any of the priorities
+        # Read whole file into one buffer and see if any of the tags
         # match against it so we dont need to do the expensive regex
         # findall on every line individually unless we find a whole match
 
@@ -75,7 +75,7 @@ def find_matches(tag_regex, file_name, priorities, priority_value_map, ignore):
             # Ignore non utf-8 files
             return
 
-        if not any(p in file_contents for p in priorities):
+        if not any(t in file_contents for t in tags):
             return
 
         # @BUG(HIGH) Throws OSError on some files if in use
@@ -246,7 +246,7 @@ def main(args):
             printer.verbose_log("Skipped file %s because it matched an exclusion rule" %(file_name), "information")
             continue
 
-        for match in find_matches(tag_regex, file_name, priorities, priority_value_map, ignore):
+        for match in find_matches(tag_regex, tags, file_name, priority_value_map, ignore):
             # Determine whether duplicate by checking if an item with the same
             # file name and line number has already been inserted into the match list
             if not any(m.file_name == match.file_name and m.line_number == match.line_number for m in matches):
