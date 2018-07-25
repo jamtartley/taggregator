@@ -56,7 +56,7 @@ def get_tag_regex(tag_marker, tag_string, priority_regex):
 def get_priority_regex(priorities):
     return "\s*(" + "|".join(priorities) + ")?\s*"
 
-def find_matches(tag_regex, tags, file_name, priority_value_map, ignore):
+def find_matches(tag_regex, lower_tags, file_name, priority_value_map, ignore):
     if os.path.isdir(file_name):
         return
 
@@ -75,7 +75,9 @@ def find_matches(tag_regex, tags, file_name, priority_value_map, ignore):
             # Ignore non utf-8 files
             return
 
-        if not any(t in file_contents for t in tags):
+        lower_contents = file_contents.lower()
+
+        if not any(t in lower_contents for t in lower_tags):
             return
 
         # @BUG(HIGH) Throws OSError on some files if in use
@@ -231,6 +233,7 @@ def main(args):
     args_tags = [tag for tag in args.tags.split(",")] if args.tags is not None else None
     raw_tags = args_tags if args_tags is not None else config["tags"]
     tags = set([re.escape(tag.strip().upper()) for tag in raw_tags])
+    lower_tags = [t.lower() for t in tags]
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
     glob_patterns = get_glob_patterns(root, should_recurse, extensions)
@@ -246,7 +249,7 @@ def main(args):
             printer.verbose_log("Skipped file %s because it matched an exclusion rule" %(file_name), "information")
             continue
 
-        for match in find_matches(tag_regex, tags, file_name, priority_value_map, ignore):
+        for match in find_matches(tag_regex, lower_tags, file_name, priority_value_map, ignore):
             # Determine whether duplicate by checking if an item with the same
             # file name and line number has already been inserted into the match list
             if not any(m.file_name == match.file_name and m.line_number == match.line_number for m in matches):
