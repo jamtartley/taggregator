@@ -19,13 +19,6 @@ class UserConfig:
     the search should be carried out recursively, whether we should display verbose info etc.
     """
     def __init__(self, raw_runtime_args):
-        self.config_folder_name = "/.taggregator/"
-        self.config_file_name = "config.json"
-        self.current_dir_config_dir_path = os.getcwd() + self.config_folder_name
-        self.current_dir_config_file_path = self.current_dir_config_dir_path + self.config_file_name
-        self.home_config_dir_path = str(Path.home()) + self.config_folder_name
-        self.home_config_file_path = self.home_config_dir_path + self.config_file_name
-
         # First we grab everything we can from the config file we find (or create if it doesn't exist)
         self.config_map = self.get_config_map()
 
@@ -51,23 +44,23 @@ class UserConfig:
         """
         Look for existing config in first {current dir}/.taggregator and then .taggregator
         """
-        if os.path.isfile(self.current_dir_config_file_path):
-            return self.current_dir_config_file_path
+        if os.path.isfile(CURRENT_DIR_CONFIG_PATH):
+            return CURRENT_DIR_CONFIG_PATH
         else:
-            if os.path.isfile(self.home_config_file_path):
-                return self.home_config_file_path
+            if os.path.isfile(HOME_DIR_CONFIG_PATH):
+                return HOME_DIR_CONFIG_PATH
 
         return None
 
     def create_default_config_file_current_dir(self):
-        self.create_default_config_file(self.current_dir_config_dir_path)
+        self.create_default_config_file(CURRENT_DIR_CONFIG_FOLDER)
 
     def create_default_config_file(self, directory):
         if not os.path.exists(directory):
             os.makedirs(directory)
             printer.log("Creating config directory at: " + directory, "information")
 
-        path = directory + self.config_file_name
+        path = directory + CONFIG_FILE_NAME
 
         if os.path.exists(path):
             while True:
@@ -105,7 +98,7 @@ class UserConfig:
             printer.verbose_log("Config found at: " + config_path, "information", append_new_line=True)
         else:
             printer.log("No config file found!", "warning")
-            config_path = self.create_default_config_file(self.home_config_dir_path)
+            config_path = self.create_default_config_file(HOME_DIR_CONFIG_PATH)
 
         try:
             with open(config_path) as config_json:
@@ -123,3 +116,10 @@ class UserConfig:
 
         with open(config_path, "w") as config_file:
             json.dump(config, config_file, indent=4)
+
+CONFIG_FOLDER = "/.taggregator/"
+CONFIG_FILE_NAME = "config.json"
+CURRENT_DIR_CONFIG_FOLDER = os.getcwd() + CONFIG_FOLDER
+CURRENT_DIR_CONFIG_PATH = CURRENT_DIR_CONFIG_FOLDER + CONFIG_FOLDER
+HOME_DIR_CONFIG_FOLDER = str(Path.home()) + CONFIG_FOLDER
+HOME_DIR_CONFIG_PATH = HOME_DIR_CONFIG_FOLDER + CONFIG_FILE_NAME
