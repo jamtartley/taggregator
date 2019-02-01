@@ -4,7 +4,7 @@
 from __future__ import print_function # Fix python2 runtime error with end=x
 from os import get_terminal_size
 
-class TerminalColours():
+class TerminalColours:
     END = '\033[0m'
     HEADER = '\033[1;37m'
     PRIORITY_NONE = END

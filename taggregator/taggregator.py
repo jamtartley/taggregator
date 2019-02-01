@@ -3,13 +3,10 @@
 
 from taggregator import printer
 from collections import defaultdict
-from json.decoder import JSONDecodeError
 from pathlib import Path
 import glob
 import itertools
-import json
 import os
-import pkg_resources
 import re
 import statistics
 import sys
@@ -118,83 +115,6 @@ def get_priority_to_colour_map(priority_value_map):
 
     return colour_map
 
-def get_existing_config_path():
-    """
-    Look for existing config in first {current dir}/.taggregator and then .taggregator
-    """
-    if os.path.isfile(current_dir_config_file_path):
-        return current_dir_config_file_path
-    else:
-        if os.path.isfile(home_config_file_path):
-            return home_config_file_path
-
-    return None
-
-def create_default_config_file_current_dir():
-    create_default_config_file(current_dir_config_dir_path)
-
-def create_default_config_file(directory):
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-        printer.log("Creating config directory at: " + directory, "information")
-
-    path = directory + config_file_name
-
-    if os.path.exists(path):
-        while True:
-            answer = input("[WARNING] File already exists, do you wish to overwrite it? (y/n): ").lower().strip()
-            if answer == "y":
-                copy_default_config_to_path(path)
-                return path
-            elif answer == "n":
-                return None
-
-    copy_default_config_to_path(path)
-    return path
-
-def copy_default_config_to_path(path):
-    default_config_json = get_default_config_json()
-    printer.log("Creating config file at: " + path, "information")
-
-    with open(path, "w") as config_file:
-        json.dump(default_config_json, config_file, indent=4)
-
-def get_default_config_json():
-    with open(pkg_resources.resource_filename(__name__, "default_config.json"), encoding="utf-8") as default_config_file:
-        return json.loads(default_config_file.read())
-
-def get_config_file():
-    """
-    Return the content of a config.json if one is found.
-    If not, one is created.
-    """
-    # If neither ~/.taggregator or {current dir}/.taggregator exists,
-    # create ~/.taggregator and copy in the default config file from bundle resources
-    config_path = get_existing_config_path()
-
-    if config_path:
-        printer.verbose_log("Config found at: " + config_path, "information", append_new_line=True)
-    else:
-        printer.log("No config file found!", "warning")
-        config_path = create_default_config_file(home_config_dir_path)
-
-    try:
-        with open(config_path) as config_json:
-            return json.load(config_json)
-    except JSONDecodeError as je:
-        error_string = "Error in your taggregator config file at line %d, column %d, exiting..." %(je.lineno, je.colno)
-        printer.log(error_string, "fatal error")
-        raise SystemExit()
-
-def set_config_property(config, key, value):
-    config[key] = value
-    config_path = get_existing_config_path()
-
-    printer.log("Found unset config property: '%s', setting it to '%s'" %(key, value), "warning")
-
-    with open(config_path, "w") as config_file:
-        json.dump(config, config_file, indent=4)
-
 def print_matches(matches, colours_by_priority):
     # Arrange every match into a dictionary with a key the item's priority
     matches_by_priority = defaultdict(list)
@@ -225,26 +145,16 @@ def print_matches(matches, colours_by_priority):
     if (len(matches) > 0):
         printer.print_new_line()
 
-def main(args):
+def main(config_map):
     # @BUG(MEDIUM) Fully support different types of path being supplied as root
     # This still doesn't work for cases where the user passes some roots like ".."
-    root = os.getcwd() + "/" + args.root
-    if not root.endswith("/"):
-        root += "/"
-    should_recurse = not args.no_recursion
-    printer.is_verbose = args.verbose
+    printer.is_verbose = config_map["is_verbose"]
 
-    config = get_config_file()
-    default_config = get_default_config_json()
-
-    for key in default_config:
-        if key not in config:
-            set_config_property(config, key, default_config[key])
-
-    tag_marker = re.escape(config["tag_marker"])
-    extensions = config["extensions"]
-    priorities = config["priorities"]
-    ignore = config["ignore"]
+    tag_marker = re.escape(config_map["tag_marker"])
+    extensions = config_map["extensions"]
+    priorities = config_map["priorities"]
+    ignore = config_map["ignore"]
+    should_recurse = config_map["should_recurse"]
     priority_value_map = get_priority_value_map(priorities)
     value_priority_map = dict(reversed(item) for item in priority_value_map.items())
 
@@ -258,15 +168,13 @@ def main(args):
     # @BUG(MEDIUM) Incorrect finding of files when running from outside project directory.
     # There are some issues with assigning the root from the command line if it is done
     # from higher up in the hierarchy than the project root folder
-    args_tags = [tag for tag in args.tags.split(",")] if args.tags is not None else None
-    raw_tags = args_tags if args_tags is not None else config["tags"]
-    tags = set([re.escape(tag.strip().upper()) for tag in raw_tags])
+    tags = config_map["tags"]
     lower_tags = [t.lower() for t in tags]
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
-    glob_patterns = get_glob_patterns(root, should_recurse, extensions)
+    glob_patterns = get_glob_patterns(config_map["root"], should_recurse, extensions)
 
-    exclude = [os.getcwd() + "/" + d for d in config["exclude"]]
+    exclude = [os.getcwd() + "/" + d for d in config_map["exclude"]]
 
     file_sets = [glob.glob(pattern, recursive=should_recurse) for pattern in glob_patterns]
     files = [f for sublist in file_sets for f in sublist]
@@ -286,9 +194,3 @@ def main(args):
     print_matches(matches, get_priority_to_colour_map(priority_value_map))
 
 default_priority = -1
-config_folder_name = "/.taggregator/"
-config_file_name = "config.json"
-current_dir_config_dir_path = os.getcwd() + config_folder_name
-current_dir_config_file_path = current_dir_config_dir_path + config_file_name
-home_config_dir_path = str(Path.home()) + config_folder_name
-home_config_file_path = home_config_dir_path + config_file_name

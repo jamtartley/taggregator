@@ -1,21 +1,21 @@
 #! /usr/bin/env python3
 #! -*- coding: utf-8 -*-
 
-from . import printer
-from . import taggregator
-from pathlib import Path
+from taggregator import printer
+from taggregator import taggregator
+from taggregator.config import UserConfig
 import argparse
 import os
 import sys
 import cProfile, pstats, io
 
-class ProfileData(object):
+class ProfileData:
     def __init__(self, should_do_profiling, line_count, sort_by):
         self.should_do_profiling = should_do_profiling
         self.line_count = line_count # How many lines the printout should display
         self.sort_by = sort_by
 
-class CommandHandler(object):
+class CommandHandler:
     def __init__(self, profile_data):
         self.profile_data = profile_data
 
@@ -43,8 +43,10 @@ class CommandHandler(object):
         # to have to specify that every time.
         parser.add_argument("--no-recursion", action="store_true", help="Only look in the given root, do not recursively search children")
 
-        args = parser.parse_args(sys.argv[1:]) if self.was_run_by_default else parser.parse_args(sys.argv[2:])
-        taggregator.main(args)
+        raw_args = parser.parse_args(sys.argv[1:]) if self.was_run_by_default else parser.parse_args(sys.argv[2:])
+        user_config = UserConfig(raw_args)
+
+        taggregator.main(user_config.config_map)
 
         if self.profile_data.should_do_profiling:
             pr.disable()
@@ -57,7 +59,7 @@ class CommandHandler(object):
                     print(line)
 
     def create(self):
-        # @TODO(LOW) Allow user to specify path for config file
+        # @FEATURE(LOW) Allow user to specify path for config file
         taggregator.create_default_config_file_current_dir()
 
 def main():
