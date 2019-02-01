@@ -104,7 +104,7 @@ def get_priority_value_map(all_priorities):
     """
     return dict((priority_text.upper(), priority_index) for priority_index, priority_text in enumerate(all_priorities))
 
-def get_priority_colours(priority_value_map):
+def get_priority_to_colour_map(priority_value_map):
     colour_map = {default_priority: printer.TerminalColours.PRIORITY_NONE}
     median_value = statistics.median(priority_value_map.values())
 
@@ -195,6 +195,36 @@ def set_config_property(config, key, value):
     with open(config_path, "w") as config_file:
         json.dump(config, config_file, indent=4)
 
+def print_matches(matches, colours_by_priority):
+    # Arrange every match into a dictionary with a key the item's priority
+    matches_by_priority = defaultdict(list)
+    matches.sort(key=lambda x: x.priority, reverse=True)
+    longest_file_name_size = max([len(match.file_name) for match in matches], default=0)
+    longest_line_number_size = max([len(str(match.line_number)) for match in matches], default=0)
+    longest_line_size = max([len(match.line) for match in matches], default=0)
+    text_padding = 2
+
+    for match in matches:
+        matches_by_priority[match.priority].append(match)
+
+    printer.print_separator()
+
+    for p in matches_by_priority: # Grab each key
+        for match in matches_by_priority[p]: # Grab each match
+            priority_colour = colours_by_priority[match.priority]
+            file_name_padding = longest_file_name_size - len(match.file_name) + text_padding
+            line_number_padding = longest_line_number_size - len(match.line_number) + text_padding
+            line_padding = longest_line_size - len(match.line) + text_padding
+
+            printer.print_right_pad(match.file_name, file_name_padding)
+            printer.print_right_pad(":" + match.line_number, line_number_padding)
+            printer.print_right_pad(priority_colour + match.line + printer.TerminalColours.END, line_padding, append_new_line=True)
+
+        printer.print_separator()
+
+    if (len(matches) > 0):
+        printer.print_new_line()
+
 def main(args):
     # @BUG(MEDIUM) Fully support different types of path being supplied as root
     # This still doesn't work for cases where the user passes some roots like ".."
@@ -203,7 +233,6 @@ def main(args):
         root += "/"
     should_recurse = not args.no_recursion
     printer.is_verbose = args.verbose
-    is_header_mode = args.print_headers
 
     config = get_config_file()
     default_config = get_default_config_json()
@@ -218,7 +247,6 @@ def main(args):
     ignore = config["ignore"]
     priority_value_map = get_priority_value_map(priorities)
     value_priority_map = dict(reversed(item) for item in priority_value_map.items())
-    priority_colours = get_priority_colours(priority_value_map)
 
     # Allow temporary overriding of tags from command line, check if command line flag
     # set. If yes use them, otherwise default to config file.
@@ -255,38 +283,7 @@ def main(args):
             if not any(m.file_name == match.file_name and m.line_number == match.line_number for m in matches):
                 matches.append(match)
 
-    if not is_header_mode and len(matches) > 0:
-        print("\n")
-
-    # Arrange every match into a dictionary with a key the item's priority
-    matches_by_property = defaultdict(list)
-    matches.sort(key=lambda x: x.priority, reverse=True)
-    longest_file_name_size = max([len(match.file_name) for match in matches], default=0)
-    longest_line_number_size = max([len(str(match.line_number)) for match in matches], default=0)
-    longest_line_size = max([len(match.line) for match in matches], default=0)
-    text_padding = 2
-
-    for match in matches:
-        matches_by_property[match.priority].append(match)
-
-    for key in matches_by_property:
-        matches_by_property[key].sort(key=lambda x: x.priority, reverse=True)
-
-        if is_header_mode:
-            printer.print_header(value_priority_map.get(key, "NONE"), priority_colours[key])
-
-        for match in matches_by_property[key]:
-            priority_colour = priority_colours[match.priority]
-            file_name_padding = longest_file_name_size - len(match.file_name) + text_padding
-            line_number_padding = longest_line_number_size - len(match.line_number) + text_padding
-            line_padding = longest_line_size - len(match.line) + text_padding
-
-            printer.print_right_pad(match.file_name, file_name_padding)
-            printer.print_right_pad(":" + match.line_number, line_number_padding)
-            printer.print_right_pad(priority_colour + match.line + printer.TerminalColours.END, line_padding, append_new_line=True)
-
-    if (len(matches) > 0):
-        print("\n")
+    print_matches(matches, get_priority_to_colour_map(priority_value_map))
 
 default_priority = -1
 config_folder_name = "/.taggregator/"

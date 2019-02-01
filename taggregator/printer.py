@@ -23,9 +23,15 @@ def print_right_pad(text, pad_size, append_new_line=False):
     end = "\n" if append_new_line else ""
     print(text + pad_size * " ", end=end)
 
+def print_new_line():
+    print("\n")
+
 def log(text, tag_text, append_new_line=False):
     log_tag = "[%s] " %(tag_text.upper())
-    print(log_tag + text + ("\n" if append_new_line else ""))
+    print(log_tag + text)
+
+    if (append_new_line):
+        print_new_line()
 
 def verbose_log(text, tag_text, append_new_line=False):
     if not is_verbose:
@@ -33,12 +39,9 @@ def verbose_log(text, tag_text, append_new_line=False):
 
     log(text, tag_text, append_new_line)
 
-def print_header(text, colour):
+def print_separator():
     dash_count = int(terminal_columns / 2)
     dashes = "-" * dash_count
-    print("\n")
-    print(dashes)
-    print(colour + str(text) + TerminalColours.END)
     print(dashes)
 
 is_verbose = False
