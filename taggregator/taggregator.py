@@ -2,16 +2,16 @@
 #! -*- coding: utf-8 -*-
 
 from taggregator import printer
-from collections import defaultdict
 from pathlib import Path
 import glob
 import itertools
 import os
 import re
-import statistics
 import sys
 
 class Match:
+    DEFAULT_PRIORITY = -1
+
     def __init__(self, file_name, line_number, line, tag, priority):
         self.file_name = file_name
         self.line_number = str(line_number)
@@ -89,7 +89,7 @@ def find_matches(tag_regex, lower_tags, file_name, priority_value_map, ignore):
             for match in matches:
                 tag = match[0].upper()
                 priority = match[1]
-                priority_idx = priority_value_map.get(priority.upper(), default_priority)
+                priority_idx = priority_value_map.get(priority.upper(), Match.DEFAULT_PRIORITY)
                 truncated_line = printer.get_truncated_text(line.strip(), 100)
 
                 yield Match(file_name, number, truncated_line, tag, priority_idx)
@@ -100,50 +100,6 @@ def get_priority_value_map(all_priorities):
     e.g. given ['LOW', 'MEDIUM', 'HIGH'] will return {'LOW': 0, 'MEDIUM': 1, 'HIGH': 2}
     """
     return dict((priority_text.upper(), priority_index) for priority_index, priority_text in enumerate(all_priorities))
-
-def get_priority_to_colour_map(priority_value_map):
-    colour_map = {default_priority: printer.TerminalColours.PRIORITY_NONE}
-    median_value = statistics.median(priority_value_map.values())
-
-    for p in priority_value_map.values():
-        if p < median_value:
-            colour_map[p] = printer.TerminalColours.PRIORITY_LOW
-        elif p > median_value:
-            colour_map[p] = printer.TerminalColours.PRIORITY_HIGH
-        else:
-            colour_map[p] = printer.TerminalColours.PRIORITY_MEDIUM
-
-    return colour_map
-
-def print_matches(matches, colours_by_priority):
-    # Arrange every match into a dictionary with a key the item's priority
-    matches_by_priority = defaultdict(list)
-    matches.sort(key=lambda x: x.priority, reverse=True)
-    longest_file_name_size = max([len(match.file_name) for match in matches], default=0)
-    longest_line_number_size = max([len(str(match.line_number)) for match in matches], default=0)
-    longest_line_size = max([len(match.line) for match in matches], default=0)
-    text_padding = 2
-
-    for match in matches:
-        matches_by_priority[match.priority].append(match)
-
-    printer.print_separator()
-
-    for p in matches_by_priority: # Grab each key
-        for match in matches_by_priority[p]: # Grab each match
-            priority_colour = colours_by_priority[match.priority]
-            file_name_padding = longest_file_name_size - len(match.file_name) + text_padding
-            line_number_padding = longest_line_number_size - len(match.line_number) + text_padding
-            line_padding = longest_line_size - len(match.line) + text_padding
-
-            printer.print_right_pad(match.file_name, file_name_padding)
-            printer.print_right_pad(":" + match.line_number, line_number_padding)
-            printer.print_right_pad(priority_colour + match.line + printer.TerminalColours.END, line_padding, append_new_line=True)
-
-        printer.print_separator()
-
-    if (len(matches) > 0):
-        printer.print_new_line()
 
 def main(config_map):
     # @BUG(MEDIUM) Fully support different types of path being supplied as root
@@ -191,6 +147,4 @@ def main(config_map):
             if not any(m.file_name == match.file_name and m.line_number == match.line_number for m in matches):
                 matches.append(match)
 
-    print_matches(matches, get_priority_to_colour_map(priority_value_map))
-
-default_priority = -1
+    printer.print_matches(matches, priority_value_map)
