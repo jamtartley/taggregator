@@ -59,7 +59,7 @@ def print_matches(matches, priority_value_map):
     # Arrange every match into a dictionary with a key the item's priority
     priority_to_colour_map = get_priority_to_colour_map(priority_value_map)
     matches_by_priority = defaultdict(list)
-    matches.sort(key=lambda x: x.priority, reverse=True)
+    matches.sort(key=lambda x: (x.priority, x.tag, x.file_name), reverse=True)
     max_file_name_size = max([len(match.file_name) for match in matches], default=0)
     max_line_number_size = max([len(str(match.line_number)) for match in matches], default=0)
     max_line_size = max([len(match.line) for match in matches], default=0)
@@ -68,7 +68,10 @@ def print_matches(matches, priority_value_map):
     for match in matches:
         matches_by_priority[match.priority].append(match)
 
-    print_separator()
+    if len(matches) > 0:
+        print_new_line()
+        print("YOUR TAGGREGATOR TODO LIST:")
+        print_separator()
 
     for p in matches_by_priority: # Grab each key
         for match in matches_by_priority[p]: # Grab each match

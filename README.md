@@ -46,7 +46,7 @@ $ tagg -t "speed, refactor"
 
 ## Create config file in current directory
 ```sh
-$ tagg create
+$ tagg create .
 ```
 
 ## Workflow integration

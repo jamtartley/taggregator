@@ -42,18 +42,18 @@ def get_tag_regex(tag_marker, tag_string, priority_regex):
     # Because we have decided that priorities can be optional, we allow zero parentheses around
     # the priority regex. This has the interesting property that the line below would be marked
     # as high priority even though the user might not want it to be:
-    # @IGNORE @FEATURE High priority test
+    # @FEATURE High priority test
     # Not really sure if this is undesired behaviour or not.
     regex_string = tag_marker + "(" + tag_string + ")" + r"\s*\(*" + priority_regex + "\)*"
 
-    # @IGNORE Return regex which will match (for example): @HACK|SPEED|FEATURE(LOW|MEDIUM)
+    # Return regex which will match (for example): @HACK|SPEED|FEATURE(LOW|MEDIUM)
     # with the priority being an optional match
     return re.compile(regex_string, re.IGNORECASE)
 
 def get_priority_regex(priorities):
     return "\s*(" + "|".join(priorities) + ")?\s*"
 
-def find_matches(tag_regex, lower_tags, file_name, priority_value_map, ignore):
+def find_matches(tag_regex, lower_tags, file_name, priority_value_map):
     if os.path.isdir(file_name):
         return
 
@@ -80,9 +80,6 @@ def find_matches(tag_regex, lower_tags, file_name, priority_value_map, ignore):
         # @BUG(HIGH) Throws OSError on some files if in use
         # Can't repro on *nix but happens on Cygwin if the file is in use
         for number, line in enumerate(file_contents.split('\n'), 1):
-            if ignore in line:
-                continue
-
             # @SPEED(MEDIUM) Regex search of processed line
             matches = tag_regex.findall(line)
 
@@ -105,7 +102,6 @@ def main(config_map):
     tag_marker = re.escape(config_map["tag_marker"])
     extensions = config_map["extensions"]
     priorities = config_map["priorities"]
-    ignore = config_map["ignore"]
     priority_value_map = get_priority_value_map(priorities)
     value_priority_map = dict(reversed(item) for item in priority_value_map.items())
 
@@ -116,15 +112,12 @@ def main(config_map):
     # special characters and compiling) so that we can avoid recomputing during the actual
     # file parsing phase.
 
-    # @BUG(MEDIUM) Incorrect finding of files when running from outside project directory.
-    # There are some issues with assigning the root from the command line if it is done
-    # from higher up in the hierarchy than the project root folder
     tags = config_map["tags"]
     lower_tags = [t.lower() for t in tags]
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
     glob_patterns = get_glob_patterns(config_map["root"], extensions)
-    exclude = [os.getcwd() + "/" + d for d in config_map["exclude"]]
+    exclude = [os.path.join(os.getcwd(), d) for d in config_map["exclude"]]
 
     file_sets = [glob.glob(pattern, recursive=True) for pattern in glob_patterns]
     files = [f for sublist in file_sets for f in sublist]
@@ -136,7 +129,7 @@ def main(config_map):
         if any(file_name.startswith(e) for e in exclude):
             continue
 
-        for match in find_matches(tag_regex, lower_tags, file_name, priority_value_map, ignore):
+        for match in find_matches(tag_regex, lower_tags, file_name, priority_value_map):
             # Determine whether duplicate by checking if an item with the same
             # file name and line number has already been inserted into the match list
             if not any(m.file_name == match.file_name and m.line_number == match.line_number for m in matches):

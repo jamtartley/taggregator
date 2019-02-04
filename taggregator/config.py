@@ -38,7 +38,7 @@ def get_existing_config_path():
     """
     Look for existing config in first {current dir}/.taggregator and then .taggregator
     """
-    current_dir_path = os.path.join(os.getcwd(), CONFIG_FOLDER)
+    current_dir_path = os.path.join(os.getcwd(), os.path.join(CONFIG_FOLDER, CONFIG_FILE_NAME))
 
     if os.path.isfile(current_dir_path):
         return current_dir_path

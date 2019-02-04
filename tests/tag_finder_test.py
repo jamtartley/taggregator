@@ -1,3 +1,4 @@
+import os
 import pytest
 from taggregator import taggregator as tagg
 
@@ -8,6 +9,15 @@ def get_compiled_regex(tags, priorities):
     priority_regex = tagg.get_priority_regex(priorities)
     tags_piped = pipe_join(tags)
     return tagg.get_tag_regex("@", tags_piped, priority_regex)
+
+def test_find_matches():
+    tags = ["todo", "hack", "robustness", "speed"]
+    priorities = ["LOW", "MEDIUM", "HIGH"]
+    tag_regex = get_compiled_regex(tags, priorities)
+
+    matches = tagg.find_matches(tag_regex, tags, os.path.join(os.getcwd(), "taggregator/example_files/test.txt"), tagg.get_priority_value_map(priorities))
+
+    assert(len(list(matches)) == 14)
 
 def test_get_priority_regex():
     priorities = ["HIGH", "LOW"]
