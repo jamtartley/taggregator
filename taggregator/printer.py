@@ -5,6 +5,7 @@ from __future__ import print_function # Fix python2 runtime error with end=x
 from collections import defaultdict
 from os import get_terminal_size
 from .taggregator import Match
+import math
 import statistics
 
 class TerminalColours:
@@ -38,7 +39,7 @@ def log(text, tag_text, append_new_line=False):
 
 def print_separator():
     dash_count = int(terminal_columns / 2)
-    dashes = "-" * dash_count
+    dashes = "=" * dash_count
     print(dashes)
 
 def get_priority_to_colour_map(priority_value_map):
@@ -56,44 +57,41 @@ def get_priority_to_colour_map(priority_value_map):
     return priority_to_colour_map
 
 def print_matches(matches, priority_value_map):
-    # Arrange every match into a dictionary with a key the item's priority
     priority_to_colour_map = get_priority_to_colour_map(priority_value_map)
+
+    # Arrange every match into a dictionary with a key the item's priority,
+    # sorted so that we display the highest priority ones at the top.
     matches_by_priority = defaultdict(list)
     matches.sort(key=lambda x: (x.priority, x.tag, x.file_name), reverse=True)
-    max_file_name_size = max([len(match.file_name) for match in matches], default=0)
-    max_line_number_size = max([len(str(match.line_number)) for match in matches], default=0)
-    max_line_size = max([len(match.line) for match in matches], default=0)
-    text_padding = 2
 
     for match in matches:
         matches_by_priority[match.priority].append(match)
 
+    # Calculate the longest piece of each type of data so that
+    # we can do some simple maths to line them up nicely.
+    size_longest_name = max([len(match.file_name) for match in matches], default=0)
+    size_longest_line_no = max([len(str(match.line_number)) for match in matches], default=0)
+    size_longest_line = max([len(match.line) for match in matches], default=0)
+    section_padding = 2
+
+    # Looks stupid to draw heading if there are no matches
     if len(matches) > 0:
-        print_new_line()
-        print("YOUR TAGGREGATOR TODO LIST:")
+        print("Your taggregator todo list:")
         print_separator()
+    else:
+        print("No taggregator tags found - start commenting your code!")
 
     for p in matches_by_priority: # Grab each key
         for match in matches_by_priority[p]: # Grab each match
-            print_match(match, priority_to_colour_map, max_file_name_size, max_line_number_size, max_line_size, text_padding)
+            colour = priority_to_colour_map[match.priority]
+            print_right_pad(match.file_name, size_longest_name - len(match.file_name) + section_padding)
+            print_right_pad(":" + match.line_number, size_longest_line_no - len(match.line_number) + section_padding)
+            print_right_pad(colour + match.line + TerminalColours.END, size_longest_line - len(match.line) + section_padding, append_new_line=True)
 
+        # Separator in between sets of matches by priority
         print_separator()
 
-    if (len(matches) > 0):
-        print_new_line()
-
-def print_match(match, priority_to_colour_map, max_file_name_size, max_line_number_size, max_line_size, text_padding):
-    priority_colour = priority_to_colour_map[match.priority]
-
-    file_name_padding = max_file_name_size - len(match.file_name) + text_padding
-    line_number_padding = max_line_number_size - len(match.line_number) + text_padding
-    line_padding = max_line_size - len(match.line) + text_padding
-
-    print_right_pad(match.file_name, file_name_padding)
-    print_right_pad(":" + match.line_number, line_number_padding)
-    print_right_pad(priority_colour + match.line + TerminalColours.END, line_padding, append_new_line=True)
-
-terminal_columns = 80
+terminal_columns = 80 # Sane default
 
 try:
     terminal_columns = get_terminal_size()[0]

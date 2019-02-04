@@ -36,7 +36,7 @@ class UserConfig:
 
 def get_existing_config_path():
     """
-    Look for existing config in first {current dir}/.taggregator and then .taggregator
+    Look for existing config in first {current dir}/.taggregator and then ~/.taggregator
     """
     current_dir_path = os.path.join(os.getcwd(), os.path.join(CONFIG_FOLDER, CONFIG_FILE_NAME))
 

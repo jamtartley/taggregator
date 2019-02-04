@@ -102,8 +102,7 @@ def main(config_map):
     tag_marker = re.escape(config_map["tag_marker"])
     extensions = config_map["extensions"]
     priorities = config_map["priorities"]
-    priority_value_map = get_priority_value_map(priorities)
-    value_priority_map = dict(reversed(item) for item in priority_value_map.items())
+    tags = config_map["tags"]
 
     # Allow temporary overriding of tags from command line, check if command line flag
     # set. If yes use them, otherwise default to config file.
@@ -112,7 +111,8 @@ def main(config_map):
     # special characters and compiling) so that we can avoid recomputing during the actual
     # file parsing phase.
 
-    tags = config_map["tags"]
+    priority_value_map = get_priority_value_map(priorities)
+    value_priority_map = dict(reversed(item) for item in priority_value_map.items())
     lower_tags = [t.lower() for t in tags]
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
@@ -122,8 +122,6 @@ def main(config_map):
     file_sets = [glob.glob(pattern, recursive=True) for pattern in glob_patterns]
     files = [f for sublist in file_sets for f in sublist]
     matches = []
-
-    printer.print_new_line()
 
     for file_name in files:
         if any(file_name.startswith(e) for e in exclude):

@@ -53,7 +53,7 @@ class CommandHandler:
                     print(line)
 
     def create(self):
-        parser = argparse.ArgumentParser(description="Run the taggregator main program")
+        parser = argparse.ArgumentParser(description="Run the taggregator config file creator")
         parser.add_argument("root", default="", nargs="?", help="Directory in which to create config folder")
         raw_args = parser.parse_args(sys.argv[1:]) if self.was_run_by_default else parser.parse_args(sys.argv[2:])
 
