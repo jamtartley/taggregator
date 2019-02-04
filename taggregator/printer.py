@@ -36,12 +36,6 @@ def log(text, tag_text, append_new_line=False):
     if (append_new_line):
         print_new_line()
 
-def verbose_log(text, tag_text, append_new_line=False):
-    if not is_verbose:
-        return
-
-    log(text, tag_text, append_new_line)
-
 def print_separator():
     dash_count = int(terminal_columns / 2)
     dashes = "-" * dash_count
@@ -96,7 +90,6 @@ def print_match(match, priority_to_colour_map, max_file_name_size, max_line_numb
     print_right_pad(":" + match.line_number, line_number_padding)
     print_right_pad(priority_colour + match.line + TerminalColours.END, line_padding, append_new_line=True)
 
-is_verbose = False
 terminal_columns = 80
 
 try:

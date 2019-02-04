@@ -17,7 +17,8 @@
         "HIGH"
     ],
     "extensions": [
-        "*"
+        "py",
+        "txt"
     ],
     "ignore": "IGNORE",
     "exclude": [

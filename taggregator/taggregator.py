@@ -22,14 +22,14 @@ class Match:
     def __str__(self):
         return self.file_name
 
-def get_glob_patterns(root, should_recurse, extensions):
+def get_glob_patterns(root, extensions):
     is_wildcard_extension = "*" in extensions
-    pattern_start = "**/*" if should_recurse else "*"
+    pattern_start = "**/*"
 
     if is_wildcard_extension:
-        return [root + pattern_start]
+        return [os.path.join(root, pattern_start)]
     else:
-        return [root + pattern_start + "." + ext for ext in extensions]
+        return [os.path.join(root, pattern_start) + "." + ext for ext in extensions]
 
 def get_tag_regex(tag_marker, tag_string, priority_regex):
     """
@@ -102,15 +102,10 @@ def get_priority_value_map(all_priorities):
     return dict((priority_text.upper(), priority_index) for priority_index, priority_text in enumerate(all_priorities))
 
 def main(config_map):
-    # @BUG(MEDIUM) Fully support different types of path being supplied as root
-    # This still doesn't work for cases where the user passes some roots like ".."
-    printer.is_verbose = config_map["is_verbose"]
-
     tag_marker = re.escape(config_map["tag_marker"])
     extensions = config_map["extensions"]
     priorities = config_map["priorities"]
     ignore = config_map["ignore"]
-    should_recurse = config_map["should_recurse"]
     priority_value_map = get_priority_value_map(priorities)
     value_priority_map = dict(reversed(item) for item in priority_value_map.items())
 
@@ -128,17 +123,17 @@ def main(config_map):
     lower_tags = [t.lower() for t in tags]
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
-    glob_patterns = get_glob_patterns(config_map["root"], should_recurse, extensions)
-
+    glob_patterns = get_glob_patterns(config_map["root"], extensions)
     exclude = [os.getcwd() + "/" + d for d in config_map["exclude"]]
 
-    file_sets = [glob.glob(pattern, recursive=should_recurse) for pattern in glob_patterns]
+    file_sets = [glob.glob(pattern, recursive=True) for pattern in glob_patterns]
     files = [f for sublist in file_sets for f in sublist]
     matches = []
 
+    printer.print_new_line()
+
     for file_name in files:
         if any(file_name.startswith(e) for e in exclude):
-            printer.verbose_log("Skipped file %s because it matched an exclusion rule" %(file_name), "information")
             continue
 
         for match in find_matches(tag_regex, lower_tags, file_name, priority_value_map, ignore):

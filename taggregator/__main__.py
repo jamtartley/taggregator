@@ -1,9 +1,9 @@
 #! /usr/bin/env python3
 #! -*- coding: utf-8 -*-
 
+from taggregator import config
 from taggregator import printer
 from taggregator import taggregator
-from taggregator.config import UserConfig
 import argparse
 import os
 import sys
@@ -36,15 +36,9 @@ class CommandHandler:
         parser = argparse.ArgumentParser(description="Run the taggregator main program")
         parser.add_argument("root", default="", nargs="?", help="Path from which to start search")
         parser.add_argument("-t", "--tags", help="Comma-separated list of tags to search for (temporarily overrides config file)")
-        parser.add_argument("-v", "--verbose", action="store_true", help="Set if program should print verbose output")
-
-        # Not nice to have a negated flag but it makes sense because
-        # standard behaviour would be to recurse and you don't want
-        # to have to specify that every time.
-        parser.add_argument("--no-recursion", action="store_true", help="Only look in the given root, do not recursively search children")
 
         raw_args = parser.parse_args(sys.argv[1:]) if self.was_run_by_default else parser.parse_args(sys.argv[2:])
-        user_config = UserConfig(raw_args)
+        user_config = config.UserConfig(raw_args)
 
         taggregator.main(user_config.config_map)
 
@@ -59,8 +53,11 @@ class CommandHandler:
                     print(line)
 
     def create(self):
-        # @FEATURE(LOW) Allow user to specify path for config file
-        taggregator.create_default_config_file_current_dir()
+        parser = argparse.ArgumentParser(description="Run the taggregator main program")
+        parser.add_argument("root", default="", nargs="?", help="Directory in which to create config folder")
+        raw_args = parser.parse_args(sys.argv[1:]) if self.was_run_by_default else parser.parse_args(sys.argv[2:])
+
+        config.create_default_config_file(raw_args.root)
 
 def main():
     CommandHandler(profile_data)
