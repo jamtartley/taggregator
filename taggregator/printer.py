@@ -21,7 +21,7 @@ def get_truncated_text(text, max_length, truncate_indicator="..."):
     Truncate text at given length and append truncate_indicator if truncated.
     If the text is shorter than or equal to max_length, just return text unmodified
     """
-    return (text[:max_length] + truncate_indicator) if len(text) > max_length else text
+    return (text[:max_length - len(truncate_indicator)] + truncate_indicator) if len(text) > max_length else text
 
 def print_right_pad(text, pad_size, append_new_line=False):
     end = "\n" if append_new_line else ""

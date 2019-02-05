@@ -1,55 +1,82 @@
 import os
 import pytest
+import re
 from taggregator import taggregator as tagg
 
-def pipe_join(items):
-    return "|".join(items)
+tags = ["TODO", "HACK", "ROBUSTNESS", "SPEED"]
+priorities = ["LOW", "MEDIUM", "HIGH"]
 
-def get_compiled_regex(tags, priorities):
+def get_compiled_regex():
     priority_regex = tagg.get_priority_regex(priorities)
-    tags_piped = pipe_join(tags)
-    return tagg.get_tag_regex("@", tags_piped, priority_regex)
+    return tagg.get_tag_regex("@", tags, priority_regex)
 
-def test_find_matches():
-    tags = ["todo", "hack", "robustness", "speed"]
-    priorities = ["LOW", "MEDIUM", "HIGH"]
-    tag_regex = get_compiled_regex(tags, priorities)
+def test_get_glob_patterns():
+    root = "/home/test"
+    wildcard_only = ["*"]
+    wildcard_mixed_in = ["txt", "*", "py"]
+    extensions = ["txt", "py"]
 
-    matches = tagg.find_matches(tag_regex, tags, os.path.join(os.getcwd(), "taggregator/example_files/test.txt"), tagg.get_priority_value_map(priorities))
+    glob_wildcard_only = tagg.get_glob_patterns(root, wildcard_only)
+    glob_wildcard_mixed_in = tagg.get_glob_patterns(root, wildcard_mixed_in)
+    glob_extensions = tagg.get_glob_patterns(root, extensions)
 
-    assert(len(list(matches)) == 14)
+    assert(glob_wildcard_only == [os.path.join(root, "**/*")])
+    assert(glob_wildcard_mixed_in == [os.path.join(root, "**/*")])
+    assert(glob_extensions == [os.path.join(root, "**/*") + "." + ext for ext in extensions])
+
+def test_get_tag_regex():
+    correct_regex = re.compile("@(TODO|HACK|ROBUSTNESS|SPEED)\\s*\\(*\\s*(LOW|MEDIUM|HIGH)?\\s*\\)*", re.IGNORECASE)
+
+    assert(tagg.get_tag_regex("@", tags, tagg.get_priority_regex(priorities)) == correct_regex)
 
 def test_get_priority_regex():
     priorities = ["HIGH", "LOW"]
-    assert(tagg.get_priority_regex(priorities) == "\s*(HIGH|LOW)?\s*")
+    assert(tagg.get_priority_regex(priorities) == r"\s*(HIGH|LOW)?\s*")
+
+def test_find_matches():
+    matches = tagg.find_matches(get_compiled_regex(), tags, os.path.join(os.getcwd(), "taggregator/example_files/test.txt"), tagg.get_priority_value_map(priorities))
+
+    assert(len(list(matches)) == 14)
+
+def test_get_priority_value_map():
+    priorities = ["LOW", "MEDIUM", "HIGH"]
+    priority_value_map = tagg.get_priority_value_map(priorities)
+
+    assert("LOW" in priority_value_map)
+    assert("MEDIUM" in priority_value_map)
+    assert("HIGH" in priority_value_map)
+
+    assert(priority_value_map["LOW"] == 0)
+    assert(priority_value_map["MEDIUM"] == 1)
+    assert(priority_value_map["HIGH"] == 2)
 
 def test_match_all_upper_no_spaces():
     line = "@TODO(HIGH) test"
-    tag_regex = get_compiled_regex(["TODO", "HACK"], ["HIGH", "LOW"])
+    tag_regex = get_compiled_regex()
 
     assert(len(tag_regex.findall(line)) == 1)
 
 def test_match_all_upper_with_spaces():
     line = "@TODO  (       HIGH ) test"
-    tag_regex = get_compiled_regex(["TODO", "HACK"], ["HIGH", "LOW"])
+    tag_regex = get_compiled_regex()
 
     assert(len(tag_regex.findall(line)) == 1)
 
 def test_random_cases_no_spaces():
     line = "@todo(high) test"
-    tag_regex = get_compiled_regex(["TODO"], ["HIGH", "LOW"])
+    tag_regex = get_compiled_regex()
 
     assert(len(tag_regex.findall(line)) == 1)
 
 def test_random_cases_with_spaces():
     line = "@todo       (   high       ) test"
-    tag_regex = get_compiled_regex(["TODO"], ["HIGH", "LOW"])
+    tag_regex = get_compiled_regex()
 
     assert(len(tag_regex.findall(line)) == 1)
 
 def test_match_with_no_priority():
     line = "@todo test"
-    tag_regex = get_compiled_regex(["TODO"], ["HIGH", "LOW"])
+    tag_regex = get_compiled_regex()
     matches = tag_regex.findall(line)
 
     assert(len(matches) == 1)
@@ -58,7 +85,7 @@ def test_match_with_no_priority():
 
 def test_multi_tags_line_with_priorities_match():
     line = "@TODO(HIGH) @HACK(LOW) test"
-    tag_regex = get_compiled_regex(["TODO", "HACK"], ["HIGH", "LOW"])
+    tag_regex = get_compiled_regex()
     matches = tag_regex.findall(line)
 
     assert(len(matches) == 2)
@@ -69,7 +96,7 @@ def test_multi_tags_line_with_priorities_match():
 
 def test_multi_tags_line_with_not_all_priorities_match():
     line = "@TODO @HACK(LOW) test"
-    tag_regex = get_compiled_regex(["TODO", "HACK"], ["LOW"])
+    tag_regex = get_compiled_regex()
     matches = tag_regex.findall(line)
 
     assert(len(matches) == 2)

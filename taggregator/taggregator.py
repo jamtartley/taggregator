@@ -31,12 +31,14 @@ def get_glob_patterns(root, extensions):
     else:
         return [os.path.join(root, pattern_start) + "." + ext for ext in extensions]
 
-def get_tag_regex(tag_marker, tag_string, priority_regex):
+def get_tag_regex(tag_marker, tags, priority_regex):
     """
     Get compiled regex for matching tags by:
         -> match tag_marker + tag_string as group
         -> match priority as group
     """
+
+    piped_tags = "|".join(tags)
 
     # @BUG(LOW) Slightly weird matching property
     # Because we have decided that priorities can be optional, we allow zero parentheses around
@@ -44,7 +46,7 @@ def get_tag_regex(tag_marker, tag_string, priority_regex):
     # as high priority even though the user might not want it to be:
     # @FEATURE High priority test
     # Not really sure if this is undesired behaviour or not.
-    regex_string = tag_marker + "(" + tag_string + ")" + r"\s*\(*" + priority_regex + "\)*"
+    regex_string = tag_marker + "(" + piped_tags + ")" + r"\s*\(*" + priority_regex + "\)*"
 
     # Return regex which will match (for example): @HACK|SPEED|FEATURE(LOW|MEDIUM)
     # with the priority being an optional match
@@ -53,7 +55,7 @@ def get_tag_regex(tag_marker, tag_string, priority_regex):
 def get_priority_regex(priorities):
     return "\s*(" + "|".join(priorities) + ")?\s*"
 
-def find_matches(tag_regex, lower_tags, file_name, priority_value_map):
+def find_matches(tag_regex, tags, file_name, priority_value_map):
     if os.path.isdir(file_name):
         return
 
@@ -73,6 +75,7 @@ def find_matches(tag_regex, lower_tags, file_name, priority_value_map):
             return
 
         lower_contents = file_contents.lower()
+        lower_tags = [t.lower() for t in tags]
 
         if not any(t in lower_contents for t in lower_tags):
             return
@@ -113,9 +116,8 @@ def main(config_map):
 
     priority_value_map = get_priority_value_map(priorities)
     value_priority_map = dict(reversed(item) for item in priority_value_map.items())
-    lower_tags = [t.lower() for t in tags]
     priority_regex = get_priority_regex(priorities)
-    tag_regex = get_tag_regex(tag_marker, "|".join(tags), priority_regex)
+    tag_regex = get_tag_regex(tag_marker, tags, priority_regex)
     glob_patterns = get_glob_patterns(config_map["root"], extensions)
     exclude = [os.path.join(os.getcwd(), d) for d in config_map["exclude"]]
 
@@ -127,7 +129,7 @@ def main(config_map):
         if any(file_name.startswith(e) for e in exclude):
             continue
 
-        for match in find_matches(tag_regex, lower_tags, file_name, priority_value_map):
+        for match in find_matches(tag_regex, tags, file_name, priority_value_map):
             # Determine whether duplicate by checking if an item with the same
             # file name and line number has already been inserted into the match list
             if not any(m.file_name == match.file_name and m.line_number == match.line_number for m in matches):
