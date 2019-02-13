@@ -10,20 +10,6 @@ def get_compiled_regex():
     priority_regex = tagg.get_priority_regex(priorities)
     return tagg.get_tag_regex("@", tags, priority_regex)
 
-def test_get_glob_patterns():
-    root = "/home/test"
-    wildcard_only = ["*"]
-    wildcard_mixed_in = ["txt", "*", "py"]
-    extensions = ["txt", "py"]
-
-    glob_wildcard_only = tagg.get_glob_patterns(root, wildcard_only)
-    glob_wildcard_mixed_in = tagg.get_glob_patterns(root, wildcard_mixed_in)
-    glob_extensions = tagg.get_glob_patterns(root, extensions)
-
-    assert(glob_wildcard_only == [os.path.join(root, "**/*")])
-    assert(glob_wildcard_mixed_in == [os.path.join(root, "**/*")])
-    assert(glob_extensions == [os.path.join(root, "**/*") + "." + ext for ext in extensions])
-
 def test_get_tag_regex():
     correct_regex = re.compile("@(TODO|HACK|ROBUSTNESS|SPEED)\\s*\\(*\\s*(LOW|MEDIUM|HIGH)?\\s*\\)*", re.IGNORECASE)
 

@@ -3,7 +3,6 @@
 
 from taggregator import printer
 from pathlib import Path
-import glob
 import itertools
 import os
 import re
@@ -27,15 +26,6 @@ class Match:
 
 def get_piped_list(items):
     return "|".join(items)
-
-def get_glob_patterns(root, extensions):
-    is_wildcard_extension = "*" in extensions
-    pattern_start = "**/*"
-
-    if is_wildcard_extension:
-        return [os.path.join(root, pattern_start)]
-    else:
-        return [os.path.join(root, pattern_start) + "." + ext for ext in extensions]
 
 def get_tag_regex(tag_marker, tags, priority_regex):
     """
@@ -111,28 +101,25 @@ def main(config_map):
     priorities = config_map["priorities"]
     tags = config_map["tags"]
 
-    # Allow temporary overriding of tags from command line, check if command line flag
-    # set. If yes use them, otherwise default to config file.
-    #
-    # We also do a large amount of the regex pre-processing we need to do here (escaping
-    # special characters and compiling) so that we can avoid recomputing during the actual
-    # file parsing phase.
-
     priority_value_map = get_priority_value_map(priorities)
     value_priority_map = dict(reversed(item) for item in priority_value_map.items())
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, tags, priority_regex)
-    glob_patterns = get_glob_patterns(config_map["root"], extensions)
     exclude = [os.path.join(os.getcwd(), d) for d in config_map["exclude"]]
 
-    files_by_pattern = [glob.glob(pattern, recursive=True) for pattern in glob_patterns]
-    files = [f for sublist in files_by_pattern for f in sublist]
+    files = []
+
+    for root, dirs, files_in_dir in os.walk(os.getcwd()):
+        for file_name in files_in_dir:
+            file_path = os.path.join(root, file_name)
+            # We only want to search for tags in files which both have one of the correct
+            # extensions and are not inside one of the excluded folders.
+            if any(file_path.endswith(ext) for ext in extensions) and not any(file_path.startswith(e) for e in exclude):
+                files.append(file_path)
+
     matches = []
 
     for file_name in files:
-        if any(file_name.startswith(e) for e in exclude):
-            continue
-
         for match in find_matches(tag_regex, tags, file_name, priority_value_map):
             # Equality check is handled by the overridden __eq__ in the Match class
             if not any(match == m for m in matches):
