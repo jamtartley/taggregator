@@ -106,16 +106,19 @@ def main(config_map):
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, tags, priority_regex)
     exclude = [os.path.join(os.getcwd(), d) for d in config_map["exclude"]]
+    can_search_any_extension = "*" in extensions
 
     files = []
 
     for root, dirs, files_in_dir in os.walk(os.getcwd()):
         for file_name in files_in_dir:
             file_path = os.path.join(root, file_name)
-            # We only want to search for tags in files which both have one of the correct
-            # extensions and are not inside one of the excluded folders.
-            if any(file_path.endswith(ext) for ext in extensions) and not any(file_path.startswith(e) for e in exclude):
-                files.append(file_path)
+            # We only want to search for tags in files which have one of the correct
+            # extensions (or user has chosen to include every extension with '*')
+            # and are not inside one of the excluded folders.
+            if can_search_any_extension or any(file_path.endswith(ext) for ext in extensions):
+                if not any(file_path.startswith(e) for e in exclude):
+                    files.append(file_path)
 
     matches = []
 
