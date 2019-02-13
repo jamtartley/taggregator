@@ -10,7 +10,7 @@ import re
 import sys
 
 class Match:
-    DEFAULT_PRIORITY = -1
+    NO_PRIORITY = -1
 
     def __init__(self, file_name, line_number, line, tag, priority):
         self.file_name = file_name
@@ -21,6 +21,12 @@ class Match:
 
     def __str__(self):
         return self.file_name
+
+    def __eq__(self, other):
+        return self.file_name == other.file_name and self.line_number == other.line_number and self.tag == other.tag
+
+def get_piped_list(items):
+    return "|".join(items)
 
 def get_glob_patterns(root, extensions):
     is_wildcard_extension = "*" in extensions
@@ -38,22 +44,20 @@ def get_tag_regex(tag_marker, tags, priority_regex):
         -> match priority as group
     """
 
-    piped_tags = "|".join(tags)
-
     # @BUG(LOW) Slightly weird matching property
     # Because we have decided that priorities can be optional, we allow zero parentheses around
     # the priority regex. This has the interesting property that the line below would be marked
     # as high priority even though the user might not want it to be:
     # @FEATURE High priority test
     # Not really sure if this is undesired behaviour or not.
-    regex_string = tag_marker + "(" + piped_tags + ")" + r"\s*\(*" + priority_regex + "\)*"
+    regex_string = tag_marker + "(" + get_piped_list(tags) + ")" + r"\s*\(*" + priority_regex + "\)*"
 
     # Return regex which will match (for example): @HACK|SPEED|FEATURE(LOW|MEDIUM)
     # with the priority being an optional match
     return re.compile(regex_string, re.IGNORECASE)
 
 def get_priority_regex(priorities):
-    return "\s*(" + "|".join(priorities) + ")?\s*"
+    return "\s*(" + get_piped_list(priorities) + ")?\s*"
 
 def find_matches(tag_regex, tags, file_name, priority_value_map):
     if os.path.isdir(file_name):
@@ -89,7 +93,7 @@ def find_matches(tag_regex, tags, file_name, priority_value_map):
             for match in matches:
                 tag = match[0].upper()
                 priority = match[1]
-                priority_idx = priority_value_map.get(priority.upper(), Match.DEFAULT_PRIORITY)
+                priority_idx = priority_value_map.get(priority.upper(), Match.NO_PRIORITY)
                 truncated_line = printer.get_truncated_text(line.strip(), 100)
 
                 yield Match(file_name, number, truncated_line, tag, priority_idx)
@@ -121,8 +125,8 @@ def main(config_map):
     glob_patterns = get_glob_patterns(config_map["root"], extensions)
     exclude = [os.path.join(os.getcwd(), d) for d in config_map["exclude"]]
 
-    file_sets = [glob.glob(pattern, recursive=True) for pattern in glob_patterns]
-    files = [f for sublist in file_sets for f in sublist]
+    files_by_pattern = [glob.glob(pattern, recursive=True) for pattern in glob_patterns]
+    files = [f for sublist in files_by_pattern for f in sublist]
     matches = []
 
     for file_name in files:
@@ -130,9 +134,8 @@ def main(config_map):
             continue
 
         for match in find_matches(tag_regex, tags, file_name, priority_value_map):
-            # Determine whether duplicate by checking if an item with the same
-            # file name and line number has already been inserted into the match list
-            if not any(m.file_name == match.file_name and m.line_number == match.line_number for m in matches):
+            # Equality check is handled by the overridden __eq__ in the Match class
+            if not any(match == m for m in matches):
                 matches.append(match)
 
-    printer.print_matches(matches, priority_value_map)
+    printer.print_matches(matches, tag_marker, priority_value_map)

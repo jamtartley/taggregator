@@ -33,9 +33,11 @@ class UserConfig:
         # We then go on to grab the data from command line arguments that wouldn't have made sense to go in a config file
         self.config_map["root"] = os.path.abspath(raw_runtime_args.root)
 
+        # If we were passed in a set of tags at runtime they take
+        # priority and we use them, falling back to tags in config file.
         tags_given_at_runtime = [tag for tag in raw_runtime_args.tags.split(",")] if raw_runtime_args.tags is not None else None
-        raw_tags = tags_given_at_runtime if tags_given_at_runtime is not None else self.config_map["tags"]
-        self.config_map["tags"] = set([re.escape(tag.strip().upper()) for tag in raw_tags])
+        tags_to_use = tags_given_at_runtime if tags_given_at_runtime is not None else self.config_map["tags"]
+        self.config_map["tags"] = set([re.escape(tag.strip().upper()) for tag in tags_to_use])
 
 def get_existing_config_path():
     """
@@ -62,6 +64,9 @@ def get_default_config_json():
     with open(pkg_resources.resource_filename(__name__, "default_config.json"), encoding="utf-8") as default_config_file:
         return json.loads(default_config_file.read())
 
+# @CLEANUP(LOW) get_config_map is a misleading name
+# It has the side effect of creating a config file
+# if one doesn't exist, but the name implies purity.
 def get_config_map():
     """
     Return the content of a config.json if one is found.

@@ -65,4 +65,4 @@ def main():
 if __name__ == "__main__":
     CommandHandler(profile_data)
 
-profile_data = ProfileData(False, 10, 'tottime')
+profile_data = ProfileData(False, 20, 'tottime')

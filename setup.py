@@ -8,9 +8,9 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="taggregator",
-    version="0.0.38",
+    version="0.0.39",
     author="Sam Hartley",
-    author_email="sam@deadcentaur.com",
+    author_email="sam@jamtartley.com",
     description="Find lines of source code you have tagged with custom categories",
     long_description=long_description,
     long_description_content_type="text/markdown",
