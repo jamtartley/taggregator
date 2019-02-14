@@ -61,7 +61,6 @@ def find_matches(tag_regex, tags, file_name, priority_value_map):
         # Read whole file into one buffer and see if any of the tags
         # match against it so we dont need to do the expensive regex
         # findall on every line individually unless we find a whole match
-
         try:
             file_contents = f.read()
         except UnicodeDecodeError:
@@ -95,7 +94,7 @@ def get_priority_value_map(all_priorities):
     """
     return dict((priority_text.upper(), priority_index) for priority_index, priority_text in enumerate(all_priorities))
 
-def main(config_map):
+def run(config_map):
     tag_marker = re.escape(config_map["tag_marker"])
     extensions = config_map["extensions"]
     priorities = config_map["priorities"]

@@ -3,7 +3,7 @@
 
 from taggregator import config
 from taggregator import printer
-from taggregator import taggregator
+from taggregator import tagg
 import argparse
 import os
 import sys
@@ -40,7 +40,7 @@ class CommandHandler:
         raw_args = parser.parse_args(sys.argv[1:]) if self.was_run_by_default else parser.parse_args(sys.argv[2:])
         user_config = config.UserConfig(raw_args)
 
-        taggregator.main(user_config.config_map)
+        tagg.run(user_config.config_map)
 
         if self.profile_data.should_do_profiling:
             pr.disable()

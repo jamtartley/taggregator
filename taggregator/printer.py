@@ -4,7 +4,7 @@
 from __future__ import print_function # Fix python2 runtime error with end=x
 from collections import defaultdict
 from os import get_terminal_size
-from .taggregator import Match
+from taggregator.tagg import Match
 import math
 import statistics
 
@@ -38,8 +38,8 @@ def print_right_pad(text, pad_size, append_new_line=False):
     print(text + pad_size * " ", end=end)
 
 def print_separator():
-    dash_count = int(terminal_columns / 2)
-    dashes = "=" * dash_count
+    sep_count = int(terminal_columns * 0.75)
+    dashes = "-" * sep_count
     print(dashes)
 
 def get_priority_to_colour_map(priority_value_map):
@@ -88,14 +88,13 @@ def print_match_line(match, tag_marker, normal_colour, highlighted_colour, pad_s
     to_print = normal_colour + before + highlighted_colour + during + normal_colour + after + TerminalColours.END
     print_right_pad(to_print, pad_size, append_new_line)
 
-
 def print_matches(matches, tag_marker, priority_value_map):
     priority_to_colour_map = get_priority_to_colour_map(priority_value_map)
 
     # Arrange every match into a dictionary with a key the item's priority,
     # sorted so that we display the highest priority ones at the top.
     matches_by_priority = defaultdict(list)
-    matches.sort(key=lambda x: (x.priority, x.tag, x.file_name), reverse=True)
+    matches.sort(key=lambda x: x.priority, reverse=True)
 
     for match in matches:
         matches_by_priority[match.priority].append(match)
@@ -115,6 +114,7 @@ def print_matches(matches, tag_marker, priority_value_map):
         print("No taggregator tags found - start commenting your code!")
 
     for p in matches_by_priority: # Grab each key
+        matches_by_priority[p].sort(key=lambda x: (x.tag)) # Sort each set of matches by tag in alphabetical order
         for match in matches_by_priority[p]: # Grab each match
             colour = priority_to_colour_map[match.priority]
             highlighted_colour = get_highlight_colour(colour)
