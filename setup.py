@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="taggregator",
-    version="0.0.41",
+    version="0.0.42",
     author="Sam Hartley",
     author_email="sam@jamtartley.com",
     description="Find lines of source code you have tagged with custom categories",
@@ -25,7 +25,7 @@ setuptools.setup(
     },
     classifiers=(
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ),
 )
