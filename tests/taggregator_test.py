@@ -1,7 +1,7 @@
 import os
 import pytest
 import re
-from taggregator import taggregator as tagg
+from taggregator import tagg
 
 tags = ["TODO", "HACK", "ROBUSTNESS", "SPEED"]
 priorities = ["LOW", "MEDIUM", "HIGH"]
@@ -20,7 +20,7 @@ def test_get_priority_regex():
     assert(tagg.get_priority_regex(priorities) == r"\s*(HIGH|LOW)?\s*")
 
 def test_find_matches():
-    matches = tagg.find_matches(get_compiled_regex(), tags, os.path.join(os.getcwd(), "taggregator/example_files/test.txt"), tagg.get_priority_value_map(priorities))
+    matches = tagg.find_matches(get_compiled_regex(), [t.lower() for t in tags], os.path.join(os.getcwd(), "taggregator/example_files/test.txt"), tagg.get_priority_value_map(priorities))
 
     assert(len(list(matches)) == 14)
 

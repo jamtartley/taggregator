@@ -61,31 +61,24 @@ def find_matches(tag_regex, tags, file_name, priority_value_map):
         # Read whole file into one buffer and see if any of the tags
         # match against it so we dont need to do the expensive regex
         # findall on every line individually unless we find a whole match
-        try:
-            file_contents = f.read()
-        except UnicodeDecodeError:
-            # Ignore non utf-8 files
-            return
-
+        file_contents = f.read()
         lower_contents = file_contents.lower()
         lower_tags = [t.lower() for t in tags]
 
-        if not any(t in lower_contents for t in lower_tags):
-            return
+        if any(t in lower_contents for t in lower_tags):
+            # @BUG(HIGH) Throws OSError on some files if in use
+            # Can't repro on *nix but happens on Cygwin if the file is in use
+            for number, line in enumerate(file_contents.split('\n'), 1):
+                # @SPEED(MEDIUM) Regex search of processed line
+                matches = tag_regex.findall(line)
 
-        # @BUG(HIGH) Throws OSError on some files if in use
-        # Can't repro on *nix but happens on Cygwin if the file is in use
-        for number, line in enumerate(file_contents.split('\n'), 1):
-            # @SPEED(MEDIUM) Regex search of processed line
-            matches = tag_regex.findall(line)
+                for match in matches:
+                    tag = match[0].upper()
+                    priority = match[1]
+                    priority_idx = priority_value_map.get(priority.upper(), Match.NO_PRIORITY)
+                    truncated_line = printer.get_truncated_text(line.strip(), 100)
 
-            for match in matches:
-                tag = match[0].upper()
-                priority = match[1]
-                priority_idx = priority_value_map.get(priority.upper(), Match.NO_PRIORITY)
-                truncated_line = printer.get_truncated_text(line.strip(), 100)
-
-                yield Match(file_name, number, truncated_line, tag, priority_idx)
+                    yield Match(file_name, number, truncated_line, tag, priority_idx)
 
 def get_priority_value_map(all_priorities):
     """
