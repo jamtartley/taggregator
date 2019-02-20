@@ -61,7 +61,12 @@ def find_matches(tag_regex, tags, file_name, priority_value_map):
         # Read whole file into one buffer and see if any of the tags
         # match against it so we dont need to do the expensive regex
         # findall on every line individually unless we find a whole match
-        file_contents = f.read()
+        try:
+            file_contents = f.read()
+        except UnicodeDecodeError:
+            # Ignore non utf-8 files
+            return
+
         lower_contents = file_contents.lower()
         lower_tags = [t.lower() for t in tags]
 
