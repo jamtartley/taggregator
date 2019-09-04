@@ -15,9 +15,9 @@ do_more_stuff()
 You can then run ```tagg``` in the project root directory and it will output the file name, line number and description to the console as below.
 
 ```
-taggregator/taggregator/taggregator.py  :57   # @BUG(HIGH) Throws OSError on some files if in use
-taggregator/taggregator/taggregator.py  :64   # @SPEED(MEDIUM) Regex search of processed line
-taggregator/taggregator/__main__.py     :34   # @TODO(LOW) Allow user to specify path for config file
+taggregator/taggregator.py  :57   # @BUG(HIGH) Throws OSError on some files if in use
+taggregator/taggregator.py  :64   # @SPEED(MEDIUM) Regex search of processed line
+taggregator/__main__.py     :34   # @TODO(LOW) Allow user to specify path for config file
 ```
 
 Each line marked with a tag will be ordered and coloured by priority.
@@ -29,7 +29,7 @@ By default, there are a number of tags and priorities in the config file install
 $ pip3 install --upgrade taggregator
 ```
 
-Installation will also create a config file at ```~/.taggregator/config.json``` but the program will prioritise a config file stored in ```{current_directory}/.taggregator/config.json``` if it exists.
+Installation will also create a config file at ```~/.tagg.json``` but the program will prioritise a config file stored in ```{current_directory}/.tagg.json``` if it exists.
 
 ## Run
 ### From project root
