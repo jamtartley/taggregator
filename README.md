@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/jamtartley/taggregator.png?branch=master)](https://travis-ci.org/jamtartley/taggregator)
 # taggregator
 
 Find lines of source code you have tagged with custom categories, defined inside a ```config.json``` file.
