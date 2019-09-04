@@ -23,25 +23,6 @@ def get_truncated_text(text, max_length, truncate_indicator="..."):
     """
     return (text[:max_length - len(truncate_indicator)] + truncate_indicator) if len(text) > max_length else text
 
-def log(text, tag, append_new_line=False):
-    """
-    Prints log entries which look like:
-    [INFORMATION] Config file created at ~/.taggregator/config.json
-    """
-    print("[%s] %s" %(tag.upper(), text))
-
-    if (append_new_line):
-        print("\n")
-
-def print_right_pad(text, pad_size, append_new_line=False):
-    end = "\n" if append_new_line else ""
-    print(text + pad_size * " ", end=end)
-
-def print_separator():
-    sep_count = int(terminal_columns * 0.75)
-    dashes = "-" * sep_count
-    print(dashes)
-
 def get_priority_to_colour_map(priority_value_map):
     """
     Map a priority value to a colour based
@@ -66,6 +47,25 @@ def get_highlight_colour(orig_colour):
     Reference https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters
     """
     return orig_colour.replace("0", "7")
+
+def log(text, tag, append_new_line=False):
+    """
+    Prints log entries which look like:
+    [INFORMATION] Config file created at ~/.taggregator/config.json
+    """
+    print("[%s] %s" %(tag.upper(), text))
+
+    if (append_new_line):
+        print("\n")
+
+def print_right_pad(text, pad_size, append_new_line=False):
+    end = "\n" if append_new_line else ""
+    print(text + pad_size * " ", end=end)
+
+def print_separator():
+    sep_count = int(terminal_columns * 0.75)
+    dashes = "-" * sep_count
+    print(dashes)
 
 def print_match_line(match, tag_marker, normal_colour, highlighted_colour, pad_size, append_new_line=False):
     """

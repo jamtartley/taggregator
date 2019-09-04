@@ -41,9 +41,9 @@ class UserConfig:
 
 def get_existing_config_path():
     """
-    Look for existing config in first {current dir}/.taggregator and then ~/.taggregator
+    Look for existing config in first {current dir} and then ~
     """
-    current_dir_path = os.path.join(os.getcwd(), os.path.join(CONFIG_FOLDER, CONFIG_FILE_NAME))
+    current_dir_path = os.path.join(os.getcwd(), CONFIG_FILE_NAME)
 
     if os.path.isfile(current_dir_path):
         return current_dir_path
@@ -55,7 +55,7 @@ def get_existing_config_path():
 
 def copy_default_config_to_path(path):
     default_config_json = get_default_config_json()
-    printer.log("Creating config file at: " + path, "information")
+    printer.log("Creating config file at: " + str(path), "information")
 
     with open(path, "w") as config_file:
         json.dump(default_config_json, config_file, indent=4)
@@ -69,16 +69,16 @@ def get_default_config_json():
 # if one doesn't exist, but the name implies purity.
 def get_config_map():
     """
-    Return the content of a config.json if one is found.
+    Return the content of a tagg.json if one is found.
     If not, one is created.
     """
-    # If neither ~/.taggregator or {current dir}/.taggregator exists,
-    # create ~/.taggregator and copy in the default config file from bundle resources
+    # If neither ~/.taggregator or {current dir}/.tagg.json exists,
+    # create ~/.tagg.json and copy in the default config file from bundle resources
     config_path = get_existing_config_path()
 
     if not config_path:
         printer.log("No config file found!", "warning")
-        config_path = create_default_config_file(HOME_DIR_CONFIG_PATH)
+        config_path = create_default_config_file(Path.home())
 
     try:
         with open(config_path) as config_json:
@@ -98,13 +98,7 @@ def set_config_property(config, key, value):
         json.dump(config, config_file, indent=4)
 
 def create_default_config_file(directory):
-    dir_path = os.path.join(directory, ".taggregator")
-
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
-        printer.log("Creating config directory at: " + dir_path, "information")
-
-    path = os.path.join(dir_path, CONFIG_FILE_NAME)
+    path = os.path.join(directory, CONFIG_FILE_NAME)
 
     if os.path.exists(path):
         while True:
@@ -119,7 +113,5 @@ def create_default_config_file(directory):
     return path
 
 
-CONFIG_FOLDER = ".taggregator"
-CONFIG_FILE_NAME = "config.json"
-HOME_DIR_CONFIG_FOLDER = os.path.join(str(Path.home()), CONFIG_FOLDER)
-HOME_DIR_CONFIG_PATH = os.path.join(HOME_DIR_CONFIG_FOLDER, CONFIG_FILE_NAME)
+CONFIG_FILE_NAME = ".tagg.json"
+HOME_DIR_CONFIG_PATH = os.path.join(str(Path.home()), CONFIG_FILE_NAME)
