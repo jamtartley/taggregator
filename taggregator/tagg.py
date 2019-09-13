@@ -107,7 +107,7 @@ def run(config_map):
 
     files = []
 
-    for root, dirs, files_in_dir in os.walk(os.getcwd()):
+    for root, dirs, files_in_dir in os.walk(config_map["root"]):
         for file_name in files_in_dir:
             file_path = os.path.join(root, file_name)
             # We only want to search for tags in files which have one of the correct
