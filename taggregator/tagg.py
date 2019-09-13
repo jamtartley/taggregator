@@ -40,14 +40,14 @@ def get_tag_regex(tag_marker, tags, priority_regex):
     # as high priority even though the user might not want it to be:
     # @FEATURE High priority test
     # Not really sure if this is undesired behaviour or not.
-    regex_string = tag_marker + "(" + get_piped_list(tags) + ")" + r"\s*\(*" + priority_regex + "\)*"
+    regex_string = tag_marker + "(" + get_piped_list(tags) + ")" + r"\s*\(*" + priority_regex + r"\)*"
 
     # Return regex which will match (for example): @HACK|SPEED|FEATURE(LOW|MEDIUM)
     # with the priority being an optional match
     return re.compile(regex_string, re.IGNORECASE)
 
 def get_priority_regex(priorities):
-    return "\s*(" + get_piped_list(priorities) + ")?\s*"
+    return r"\s*(" + get_piped_list(priorities) + r")?\s*"
 
 def find_matches(tag_regex, tags, file_name, priority_value_map):
     if os.path.isdir(file_name):

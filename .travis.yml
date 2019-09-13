@@ -1,21 +1,34 @@
 language: python
 python:
-    - 3.7
+- 3.7
 git:
-    depth: false
+  depth: false
 notifications:
-    email: false
+  email: false
+  irc:
+    use_notice: true
+    skip_join: false
+    on_success: always
+    on_failure: always
+    template:
+    - "%{author} pushed to %{repository_slug}. %{message}"
+    - "%{commit_message}"
+    - "------------------------"
+    - pip3 install --upgrade taggregator
+    channels:
+      secure: keqkxeF3z4RnREY/G44ZpMd5Jo6VeTHlsmZczPoc8dMXov+sJmbaPVBZxdS+Z352xwk/7zzhaMAkqoxv7AChADH2a9xNG6/i79Inq2dRidGFGTRGT4G+SM6xqlNAfYanzYIpLtRZaEYYxylntblXKTf5oVLch7dfEzjJUKSHP7FGfKnTOU8C1s2IRfLE8NFf3AcgwrXVhZE3FauE9gEqbqdwXE0dodrEWUvMixg64mYstyTOLePvB3fR9EuCenILpUbD6VsxNNd1lYRHp7kvArT/vjjzC21EHyTsbhSAqMIKunWBMfLTl9mWyzPgUyKQulboGx9E7i4k6HCT5sIORGnG2qI85lh+AMSSb4BaM4ormUEj4ngIextr9BONJET34GrsHL1O2G9/CFJknoM+TdlH3IAA0wDkJE5EeFzrFGw7Tdb+LV3oS7yoN8/Q85uAjeTsKhc5XCBhb/rHkn/fupQXkEewfy0Wcp1ydWbtKWcNDW+/e0OsfS808VmxXzgui8dBiaQfTeV4jKwrjDiPQz1y+MOZcKB/N9zM6Le7/WxxT8aGeCddxc2N3UsTcIviZazw4BZKTpBU2x7R5jv5XqmYZHsMhCgILCsymbdo8y3Uf7bIqEaS77q9tHzhPBiRnaR0fwBoakw664oqU0NDye6EyhHJnv8vBVdMx+ztk0g=
 install:
-    - pip3 install -e .
-    - pip3 install pytest
-    - pytest -v
-script: python setup.py sdist
+- pip3 install -e .
+- pip3 install pytest
+script:
+- pytest -v
+- python setup.py sdist
 deploy:
-    provider: pypi
-    user:
-        secure: bW/6wHGcNb3PmmE2oxyLFgDKKkrgq0mM4WqJ9RwHBc3iNKK4VoBtXBsCidW1/xFdA+fT/JXsOGqT/qh4MInOs2vNh59EDKcDnE6fQAeBTzoV5PtgH+IRxJAoWXOXhGiM4X+Kl1bDuJVzRGlZKUvEXFpTnmNUrjt/TfBB2WhhwJGS1b5k76JtD1eT8T40GcfZbrx+yiSWZ4MFy2AiOokg3cMx2eBCySMpasLAbfAwZaMUWDY3oTTPSlVrh0SxbJvuwuQ2IvfnD1zeWmTv5QSUFMq1oyS3LStTOgNCJVXBbyiVz5+u3C3cktsy9QkZbAgGP5E/QCq+v35ZcGF5Qnd9uUzfHHx8B+gZQ+RW9LByJ4TcsEkqs78hLNwe7RjEXD/thcxCb7uO72JrCJhzgy/GlrmuQ+L2ZkXb4gVzPACDZSRGbyq0FM2pzS3qUz0fr9Q1D3o2QIAyOZy3/hAto5HV53dE1Y6wItmXQ9snnGCeCWvVI29z2Evsst+sCeR+LqrIiNjhKPWCtDH6Sh46+FvgHWPSfplxANobiR+mMASz4jx8jTVxGReiskql96qBNT9qkX5jIF+iImzR4W295lQOUt5Ud3rG0bxYAA2Q85j6YNz96UrgOAzbaYDqeigWFWwB4mtBvm1enHYtdgf0zOBr6TetcaIyEsy7BxCz1vT7NdM=
-    password:
-        secure: vWR8P+W/9njIaj6LSI2//gfzTBqugEh4rbUVQsRhQMJjS06ZNPbdOvJkZtcHh5isDjkD7z7r9cFZzTd9U1p4ufAItWobUXccS9913+aXR8GdZbsMDAjvgQtvukKSLymEuJIJ17DvXw1qgRwbff7oApIszntq0ZCoRqF2tG8I8OHKSi8fYaCXn5RrjMfyQJd5RYk9kOEmkQngltZnIjzdnTkTWs6wmdGm9mQQdFDYuRocRJeBHdz9oljRh6JB5AvM6ouMe9Mp+a5X5i40Erpv9wSpmr2d2NI3UxQKae5iX1ZhjovGNPCUwKBtzUk1rRWoouC+hYtc2tKVXGJdPAk++/P6n1vhSifIBjDVhLewwRMtI5IRgC5alekN1PJ2sxIVQK+g7k4YO2GfXBnBRFHIPS9HK53pjAd5Gyu9/+XYDRyNMsj7woD0UYqey06Uyc9owqREUXW5D54gRhwOBHQEgz61imKxPGSB1lKRU2qlAI1FgqjjVKnetcwd7gU8p/PY0IcqKVkGIIPaSp/Al78i1a2aASpZU8+wiKwso5YzVA/OCX+PFGz8zDC8hoMcJCJNxgFAZkqCdx96hjFZRW7+PwahLN8XptfUU8wQS8tdhRu8B1I5nVA9ouV+9iyLQq4furrtwaad8drt2TecxKaJ7z9GqIzrePlXWEsix9BubH0=
-    on:
-        repo: jamtartley/taggregator
-        branch: master
+  provider: pypi
+  user:
+    secure: bW/6wHGcNb3PmmE2oxyLFgDKKkrgq0mM4WqJ9RwHBc3iNKK4VoBtXBsCidW1/xFdA+fT/JXsOGqT/qh4MInOs2vNh59EDKcDnE6fQAeBTzoV5PtgH+IRxJAoWXOXhGiM4X+Kl1bDuJVzRGlZKUvEXFpTnmNUrjt/TfBB2WhhwJGS1b5k76JtD1eT8T40GcfZbrx+yiSWZ4MFy2AiOokg3cMx2eBCySMpasLAbfAwZaMUWDY3oTTPSlVrh0SxbJvuwuQ2IvfnD1zeWmTv5QSUFMq1oyS3LStTOgNCJVXBbyiVz5+u3C3cktsy9QkZbAgGP5E/QCq+v35ZcGF5Qnd9uUzfHHx8B+gZQ+RW9LByJ4TcsEkqs78hLNwe7RjEXD/thcxCb7uO72JrCJhzgy/GlrmuQ+L2ZkXb4gVzPACDZSRGbyq0FM2pzS3qUz0fr9Q1D3o2QIAyOZy3/hAto5HV53dE1Y6wItmXQ9snnGCeCWvVI29z2Evsst+sCeR+LqrIiNjhKPWCtDH6Sh46+FvgHWPSfplxANobiR+mMASz4jx8jTVxGReiskql96qBNT9qkX5jIF+iImzR4W295lQOUt5Ud3rG0bxYAA2Q85j6YNz96UrgOAzbaYDqeigWFWwB4mtBvm1enHYtdgf0zOBr6TetcaIyEsy7BxCz1vT7NdM=
+  password:
+    secure: vWR8P+W/9njIaj6LSI2//gfzTBqugEh4rbUVQsRhQMJjS06ZNPbdOvJkZtcHh5isDjkD7z7r9cFZzTd9U1p4ufAItWobUXccS9913+aXR8GdZbsMDAjvgQtvukKSLymEuJIJ17DvXw1qgRwbff7oApIszntq0ZCoRqF2tG8I8OHKSi8fYaCXn5RrjMfyQJd5RYk9kOEmkQngltZnIjzdnTkTWs6wmdGm9mQQdFDYuRocRJeBHdz9oljRh6JB5AvM6ouMe9Mp+a5X5i40Erpv9wSpmr2d2NI3UxQKae5iX1ZhjovGNPCUwKBtzUk1rRWoouC+hYtc2tKVXGJdPAk++/P6n1vhSifIBjDVhLewwRMtI5IRgC5alekN1PJ2sxIVQK+g7k4YO2GfXBnBRFHIPS9HK53pjAd5Gyu9/+XYDRyNMsj7woD0UYqey06Uyc9owqREUXW5D54gRhwOBHQEgz61imKxPGSB1lKRU2qlAI1FgqjjVKnetcwd7gU8p/PY0IcqKVkGIIPaSp/Al78i1a2aASpZU8+wiKwso5YzVA/OCX+PFGz8zDC8hoMcJCJNxgFAZkqCdx96hjFZRW7+PwahLN8XptfUU8wQS8tdhRu8B1I5nVA9ouV+9iyLQq4furrtwaad8drt2TecxKaJ7z9GqIzrePlXWEsix9BubH0=
+  on:
+    repo: jamtartley/taggregator
+    branch: master
