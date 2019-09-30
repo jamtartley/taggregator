@@ -5,18 +5,6 @@ git:
   depth: false
 notifications:
   email: false
-  irc:
-    use_notice: true
-    skip_join: false
-    on_success: always
-    on_failure: always
-    template:
-    - "%{author} pushed to %{repository_slug}. %{message}"
-    - "%{commit_message}"
-    - "------------------------"
-    - pip3 install --upgrade taggregator
-    channels:
-      secure: keqkxeF3z4RnREY/G44ZpMd5Jo6VeTHlsmZczPoc8dMXov+sJmbaPVBZxdS+Z352xwk/7zzhaMAkqoxv7AChADH2a9xNG6/i79Inq2dRidGFGTRGT4G+SM6xqlNAfYanzYIpLtRZaEYYxylntblXKTf5oVLch7dfEzjJUKSHP7FGfKnTOU8C1s2IRfLE8NFf3AcgwrXVhZE3FauE9gEqbqdwXE0dodrEWUvMixg64mYstyTOLePvB3fR9EuCenILpUbD6VsxNNd1lYRHp7kvArT/vjjzC21EHyTsbhSAqMIKunWBMfLTl9mWyzPgUyKQulboGx9E7i4k6HCT5sIORGnG2qI85lh+AMSSb4BaM4ormUEj4ngIextr9BONJET34GrsHL1O2G9/CFJknoM+TdlH3IAA0wDkJE5EeFzrFGw7Tdb+LV3oS7yoN8/Q85uAjeTsKhc5XCBhb/rHkn/fupQXkEewfy0Wcp1ydWbtKWcNDW+/e0OsfS808VmxXzgui8dBiaQfTeV4jKwrjDiPQz1y+MOZcKB/N9zM6Le7/WxxT8aGeCddxc2N3UsTcIviZazw4BZKTpBU2x7R5jv5XqmYZHsMhCgILCsymbdo8y3Uf7bIqEaS77q9tHzhPBiRnaR0fwBoakw664oqU0NDye6EyhHJnv8vBVdMx+ztk0g=
 install:
 - pip3 install -e .
 - pip3 install pytest
