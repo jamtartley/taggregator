@@ -1,34 +1,38 @@
 #! /usr/bin/env python3
 #! -*- coding: utf-8 -*-
 
-from __future__ import print_function # Fix python2 runtime error with end=x
+from __future__ import print_function  # Fix python2 runtime error with end=x
 from collections import defaultdict
 from os import get_terminal_size
 from taggregator.tagg import Match
 import math
 import statistics
 
+
 class TerminalColours:
-    END             = '\033[0m'
-    HEADER          = '\033[1;37m'
-    PRIORITY_NONE   = '\033[0m'
-    PRIORITY_LOW    = '\033[0;32m'
+    END = '\033[0m'
+    HEADER = '\033[1;37m'
+    PRIORITY_NONE = '\033[0m'
+    PRIORITY_LOW = '\033[0;32m'
     PRIORITY_MEDIUM = '\033[0;33m'
-    PRIORITY_HIGH   = '\033[0;31m'
+    PRIORITY_HIGH = '\033[0;31m'
+
 
 def get_truncated_text(text, max_length, truncate_indicator="..."):
     """
     Truncate text at given length and append truncate_indicator if truncated.
     If the text is shorter than or equal to max_length, just return text unmodified
     """
-    return (text[:max_length - len(truncate_indicator)] + truncate_indicator) if len(text) > max_length else text
+    return (text[:max_length - len(truncate_indicator)] +
+            truncate_indicator) if len(text) > max_length else text
+
 
 def get_priority_to_colour_map(priority_value_map):
     """
     Map a priority value to a colour based
     on its value relative to the median priority value.
     """
-    priority_to_colour_map = { Match.NO_PRIORITY: TerminalColours.PRIORITY_NONE}
+    priority_to_colour_map = {Match.NO_PRIORITY: TerminalColours.PRIORITY_NONE}
     median_value = statistics.median(priority_value_map.values())
 
     for p in priority_value_map.values():
@@ -41,6 +45,7 @@ def get_priority_to_colour_map(priority_value_map):
 
     return priority_to_colour_map
 
+
 def get_highlight_colour(orig_colour):
     """
     Keep same colour but switch foreground with background.
@@ -48,26 +53,36 @@ def get_highlight_colour(orig_colour):
     """
     return orig_colour.replace("0", "7")
 
+
 def log(text, tag, append_new_line=False):
     """
     Prints log entries which look like:
     [INFORMATION] Config file created at ~/.taggregator/config.json
     """
-    print("[%s] %s" %(tag.upper(), text))
+    print("[%s] %s" % (tag.upper(), text))
 
     if (append_new_line):
         print("\n")
 
+
 def print_right_pad(text, pad_size, append_new_line=False):
     end = "\n" if append_new_line else ""
     print(text + pad_size * " ", end=end)
+
 
 def print_separator():
     sep_count = int(terminal_columns * 0.75)
     dashes = "-" * sep_count
     print(dashes)
 
-def print_match_line(match, tag_marker, normal_colour, highlighted_colour, pad_size, append_new_line=False):
+
+def print_match_line(
+        match,
+        tag_marker,
+        normal_colour,
+        highlighted_colour,
+        pad_size,
+        append_new_line=False):
     """
     Prints a found match, highlighting the tag so that it is clear
     in case there is a line with two different tags.
@@ -85,8 +100,10 @@ def print_match_line(match, tag_marker, normal_colour, highlighted_colour, pad_s
     after = line[end_idx:len(line)]
 
     # Switch between normal and highlighted based on whether printing the tag
-    to_print = normal_colour + before + highlighted_colour + during + normal_colour + after + TerminalColours.END
+    to_print = normal_colour + before + highlighted_colour + \
+        during + normal_colour + after + TerminalColours.END
     print_right_pad(to_print, pad_size, append_new_line)
+
 
 def print_matches(matches, tag_marker, priority_value_map):
     priority_to_colour_map = get_priority_to_colour_map(priority_value_map)
@@ -101,8 +118,10 @@ def print_matches(matches, tag_marker, priority_value_map):
 
     # Calculate the longest piece of each type of data so that
     # we can do some simple maths to line them up nicely.
-    size_longest_name = max([len(match.file_name) for match in matches], default=0)
-    size_longest_line_no = max([len(str(match.line_number)) for match in matches], default=0)
+    size_longest_name = max([len(match.file_name)
+                             for match in matches], default=0)
+    size_longest_line_no = max([len(str(match.line_number))
+                                for match in matches], default=0)
     size_longest_line = max([len(match.line) for match in matches], default=0)
     section_padding = 2
 
@@ -113,21 +132,32 @@ def print_matches(matches, tag_marker, priority_value_map):
     else:
         print("No taggregator tags found - start commenting your code!")
 
-    for p in matches_by_priority: # Grab each key
-        matches_by_priority[p].sort(key=lambda x: (x.tag)) # Sort each set of matches by tag in alphabetical order
-        for match in matches_by_priority[p]: # Grab each match
+    for p in matches_by_priority:  # Grab each key
+        # Sort each set of matches by tag in alphabetical order
+        matches_by_priority[p].sort(key=lambda x: (x.tag))
+        for match in matches_by_priority[p]:  # Grab each match
             colour = priority_to_colour_map[match.priority]
             highlighted_colour = get_highlight_colour(colour)
-            print_right_pad(match.file_name, size_longest_name - len(match.file_name) + section_padding)
-            print_right_pad(":" + match.line_number, size_longest_line_no - len(match.line_number) + section_padding)
-            print_match_line(match, tag_marker, colour, highlighted_colour, size_longest_line - len(match.line) + section_padding, append_new_line=True)
+            print_right_pad(match.file_name, size_longest_name -
+                            len(match.file_name) + section_padding)
+            print_right_pad(":" +
+                            match.line_number, size_longest_line_no -
+                            len(match.line_number) +
+                            section_padding)
+            print_match_line(match,
+                             tag_marker,
+                             colour,
+                             highlighted_colour,
+                             size_longest_line - len(match.line) + section_padding,
+                             append_new_line=True)
 
         # Separator in between sets of matches by priority
         print_separator()
 
-terminal_columns = 80 # Sane default
+
+terminal_columns = 80  # Sane default
 
 try:
     terminal_columns = get_terminal_size()[0]
 except OSError:
-    pass # Leave at 80
+    pass  # Leave at 80

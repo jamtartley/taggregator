@@ -9,6 +9,7 @@ from taggregator import printer
 from pathlib import Path
 from json.decoder import JSONDecodeError
 
+
 class UserConfig:
     """
     The idea of this class is to amalgamate data extracted both from the static config file that
@@ -20,8 +21,10 @@ class UserConfig:
     Its main interface is `config_map` which is a dictionary mapping strings to various types
     of data, for example the runtime root, tags to search for, priorities to search for etc.
     """
+
     def __init__(self, raw_runtime_args):
-        # First we grab everything we can from the config file we find (or create if it doesn't exist)
+        # First we grab everything we can from the config file we find (or
+        # create if it doesn't exist)
         self.config_map = get_config_map()
 
         default_config = get_default_config_json()
@@ -30,14 +33,19 @@ class UserConfig:
             if key not in self.config_map:
                 set_config_property(self.config_map, key, default_config[key])
 
-        # We then go on to grab the data from command line arguments that wouldn't have made sense to go in a config file
+        # We then go on to grab the data from command line arguments that
+        # wouldn't have made sense to go in a config file
         self.config_map["root"] = os.path.abspath(raw_runtime_args.root)
 
         # If we were passed in a set of tags at runtime they take
         # priority and we use them, falling back to tags in config file.
-        tags_given_at_runtime = [tag for tag in raw_runtime_args.tags.split(",")] if raw_runtime_args.tags is not None else None
-        tags_to_use = tags_given_at_runtime if tags_given_at_runtime is not None else self.config_map["tags"]
-        self.config_map["tags"] = set([re.escape(tag.strip().upper()) for tag in tags_to_use])
+        tags_given_at_runtime = [tag for tag in raw_runtime_args.tags.split(
+            ",")] if raw_runtime_args.tags is not None else None
+        tags_to_use = tags_given_at_runtime if tags_given_at_runtime is not None else self.config_map[
+            "tags"]
+        self.config_map["tags"] = set(
+            [re.escape(tag.strip().upper()) for tag in tags_to_use])
+
 
 def get_existing_config_path():
     """
@@ -53,12 +61,14 @@ def get_existing_config_path():
 
     return None
 
+
 def copy_default_config_to_path(path):
     default_config_json = get_default_config_json()
     printer.log("Creating config file at: " + str(path), "information")
 
     with open(path, "w") as config_file:
         json.dump(default_config_json, config_file, indent=4)
+
 
 def get_default_config_json():
     with open(pkg_resources.resource_filename(__name__, "default_config.json"), encoding="utf-8") as default_config_file:
@@ -67,13 +77,16 @@ def get_default_config_json():
 # @CLEANUP(LOW) get_config_map is a misleading name
 # It has the side effect of creating a config file
 # if one doesn't exist, but the name implies purity.
+
+
 def get_config_map():
     """
     Return the content of a tagg.json if one is found.
     If not, one is created.
     """
     # If neither ~/.taggregator or {current dir}/.tagg.json exists,
-    # create ~/.tagg.json and copy in the default config file from bundle resources
+    # create ~/.tagg.json and copy in the default config file from bundle
+    # resources
     config_path = get_existing_config_path()
 
     if not config_path:
@@ -84,25 +97,31 @@ def get_config_map():
         with open(config_path) as config_json:
             return json.load(config_json)
     except JSONDecodeError as je:
-        error_string = "Error in your taggregator config file at line %d, column %d, exiting..." %(je.lineno, je.colno)
+        error_string = "Error in your taggregator config file at line %d, column %d, exiting..." % (
+            je.lineno, je.colno)
         printer.log(error_string, "fatal error")
         raise SystemExit()
+
 
 def set_config_property(config, key, value):
     config[key] = value
     config_path = get_existing_config_path()
 
-    printer.log("Found unset config property: '%s', setting it to '%s'" %(key, value), "warning")
+    printer.log(
+        "Found unset config property: '%s', setting it to '%s'" %
+        (key, value), "warning")
 
     with open(config_path, "w") as config_file:
         json.dump(config, config_file, indent=4)
+
 
 def create_default_config_file(directory):
     path = os.path.join(directory, CONFIG_FILE_NAME)
 
     if os.path.exists(path):
         while True:
-            answer = input("[WARNING] File already exists, do you wish to overwrite it? (y/n): ").lower().strip()
+            answer = input(
+                "[WARNING] File already exists, do you wish to overwrite it? (y/n): ").lower().strip()
             if answer == "y":
                 copy_default_config_to_path(path)
                 return path

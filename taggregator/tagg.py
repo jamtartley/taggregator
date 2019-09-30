@@ -8,6 +8,7 @@ import os
 import re
 import sys
 
+
 class Match:
     NO_PRIORITY = -1
 
@@ -24,8 +25,10 @@ class Match:
     def __eq__(self, other):
         return self.file_name == other.file_name and self.line_number == other.line_number and self.tag == other.tag
 
+
 def get_piped_list(items):
     return "|".join(items)
+
 
 def get_tag_regex(tag_marker, tags, priority_regex):
     """
@@ -40,14 +43,17 @@ def get_tag_regex(tag_marker, tags, priority_regex):
     # as high priority even though the user might not want it to be:
     # @FEATURE High priority test
     # Not really sure if this is undesired behaviour or not.
-    regex_string = tag_marker + "(" + get_piped_list(tags) + ")" + r"\s*\(*" + priority_regex + r"\)*"
+    regex_string = tag_marker + \
+        "(" + get_piped_list(tags) + ")" + r"\s*\(*" + priority_regex + r"\)*"
 
     # Return regex which will match (for example): @HACK|SPEED|FEATURE(LOW|MEDIUM)
     # with the priority being an optional match
     return re.compile(regex_string, re.IGNORECASE)
 
+
 def get_priority_regex(priorities):
     return r"\s*(" + get_piped_list(priorities) + r")?\s*"
+
 
 def find_matches(tag_regex, tags, file_name, priority_value_map):
     if os.path.isdir(file_name):
@@ -80,17 +86,22 @@ def find_matches(tag_regex, tags, file_name, priority_value_map):
                 for match in matches:
                     tag = match[0].upper()
                     priority = match[1]
-                    priority_idx = priority_value_map.get(priority.upper(), Match.NO_PRIORITY)
-                    truncated_line = printer.get_truncated_text(line.strip(), 100)
+                    priority_idx = priority_value_map.get(
+                        priority.upper(), Match.NO_PRIORITY)
+                    truncated_line = printer.get_truncated_text(
+                        line.strip(), 100)
 
                     yield Match(file_name, number, truncated_line, tag, priority_idx)
+
 
 def get_priority_value_map(all_priorities):
     """
     Maps an index of increasing size to each priority ranging from low -> high
     e.g. given ['LOW', 'MEDIUM', 'HIGH'] will return {'LOW': 0, 'MEDIUM': 1, 'HIGH': 2}
     """
-    return dict((priority_text.upper(), priority_index) for priority_index, priority_text in enumerate(all_priorities))
+    return dict((priority_text.upper(), priority_index)
+                for priority_index, priority_text in enumerate(all_priorities))
+
 
 def run(config_map):
     tag_marker = re.escape(config_map["tag_marker"])
@@ -99,7 +110,8 @@ def run(config_map):
     tags = config_map["tags"]
 
     priority_value_map = get_priority_value_map(priorities)
-    value_priority_map = dict(reversed(item) for item in priority_value_map.items())
+    value_priority_map = dict(reversed(item)
+                              for item in priority_value_map.items())
     priority_regex = get_priority_regex(priorities)
     tag_regex = get_tag_regex(tag_marker, tags, priority_regex)
     exclude = [os.path.join(os.getcwd(), d) for d in config_map["exclude"]]
@@ -113,15 +125,21 @@ def run(config_map):
             # We only want to search for tags in files which have one of the correct
             # extensions (or user has chosen to include every extension with '*')
             # and are not inside one of the excluded folders.
-            if can_search_any_extension or any(file_path.endswith(ext) for ext in extensions):
+            if can_search_any_extension or any(
+                    file_path.endswith(ext) for ext in extensions):
                 if not any(file_path.startswith(e) for e in exclude):
                     files.append(file_path)
 
     matches = []
 
     for file_name in files:
-        for match in find_matches(tag_regex, tags, file_name, priority_value_map):
-            # Equality check is handled by the overridden __eq__ in the Match class
+        for match in find_matches(
+                tag_regex,
+                tags,
+                file_name,
+                priority_value_map):
+            # Equality check is handled by the overridden __eq__ in the Match
+            # class
             if not any(match == m for m in matches):
                 matches.append(match)
 
